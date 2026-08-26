@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stu's Meal Planner Pro (Web Edition)</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-amber: #f97316;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --gold-pro: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 75px; overflow-x: hidden; }
+    
+    .header { background: #0f172a; border-bottom: 1px solid var(--border-color); padding: 10px 16px; position: sticky; top: 0; z-index: 500; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; max-width: 1400px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 8px; font-size: 1.15rem; font-weight: 800; color: #ffffff; white-space: nowrap; }
+    
+    .top-nav-tabs { display: flex; gap: 6px; overflow-x: auto; }
+    .nav-btn { background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; white-space: nowrap; transition: 0.15s; }
+    .nav-btn:hover { border-color: var(--accent-amber); }
+    .nav-btn.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 700; }
+    
+    .header-right-controls { display: flex; align-items: center; gap: 8px; }
+    .user-pill-badge { background: #312e81; color: #c7d2fe; border: 1px solid #4338ca; font-size: 0.75rem; font-weight: 700; padding: 5px 10px; border-radius: 14px; white-space: nowrap; cursor: pointer; }
+    .plan-badge { font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; cursor: pointer; }
+    .plan-free { background: #334155; color: #94a3b8; border: 1px solid #475569; }
+    .plan-pro { background: #854d0e; color: #fef08a; border: 1px solid var(--gold-pro); }
+
+    .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 12px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px; width: 100%; box-sizing: border-box; }
+    .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 6px; color: #fff; }
+    
+    .action-btn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; width: 100%; }
+    .btn { background: #334155; color: var(--text-main); border: none; padding: 6px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; white-space: nowrap; transition: 0.15s; }
+    .btn:hover { filter: brightness(1.15); }
+    .btn-purple { background: var(--accent-purple); color: #fff; }
+    .btn-amber { background: var(--accent-amber); color: #000; }
+    .btn-blue { background: var(--accent-blue); color: #fff; }
+    .btn-green { background: var(--accent-green); color: #fff; }
+    .btn-gold { background: var(--gold-pro); color: #000; font-weight: 800; }
+    .btn-red { background: #7f1d1d; color: #fca5a5; }
+    .btn-sm { padding: 4px 6px; font-size: 0.72rem; }
+    
+    .meal-selector { display: flex; gap: 6px; margin: 8px 0; }
+    .meal-time-btn { flex: 1; padding: 8px 4px; background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-weight: 700; cursor: pointer; text-align: center; font-size: 0.8rem; }
+    .meal-time-btn.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); }
+    
+    .cuisine-row-compact { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pill { background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+    .pill.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 800; }
+    
+    .grid-cards { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px; }
+    .meal-card { background: #0f172a; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-space: space-between; width: 100%; box-sizing: border-box; }
+    .meal-card-img { width: 100%; height: 160px; object-fit: cover; border-bottom: 1px solid var(--border-color); background: #1e293b; }
+    .meal-card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+
+    .ad-card { background: linear-gradient(135deg, #1e1b4b, #0f172a); border: 1px dashed #6366f1; border-radius: 10px; padding: 12px; margin: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+    .ad-tag { font-size: 0.6rem; color: #a5b4fc; border: 1px solid #4f46e5; padding: 1px 4px; border-radius: 3px; font-weight: 700; }
+
+    .lock-banner { background: #3b0764; border: 1px solid #9333ea; color: #e9d5ff; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+
+    .onboarding-carousel-box { background: #0f172a; border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; min-height: 240px; display: flex; flex-direction: column; justify-space: space-between; margin: 10px 0; }
+    .carousel-dots { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #334155; cursor: pointer; }
+    .dot.active { background: var(--accent-amber); width: 20px; border-radius: 4px; }
+
+    .pricing-table { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .pricing-card { background: #0f172a; border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; text-align: center; }
+    .pricing-card.popular { border: 2px solid var(--gold-pro); }
+
+    .payment-btn-stripe { background: #635bff; color: #fff; font-weight: 700; width: 100%; padding: 10px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; margin-top: 8px; }
+    .payment-btn-paypal { background: #0070ba; color: #fff; font-weight: 700; width: 100%; padding: 10px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; margin-top: 6px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 16px; }
+
+    .ing-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; min-height: 48px; align-content: flex-start; }
+    .ing-badge { font-size: 0.68rem; padding: 3px 6px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+    .ing-in-stock { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+    .ing-missing { background: #451a03; color: #fbbf24; border: 1px solid #b45309; }
+
+    .vertical-list-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .list-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; gap: 12px; }
+
+    @media (min-width: 768px) {
+      .top-nav-tabs { display: flex; }
+      body { padding-bottom: 0; }
+      .grid-cards { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <span>👨‍🍳</span>
+        <span>Stu's Meal Planner <small style="font-size:0.65rem; color:var(--accent-amber); border:1px solid var(--accent-amber); padding:1px 4px; border-radius:4px; margin-left:4px;">WEB EDITION</small></span>
+      </div>
+
+      <div class="top-nav-tabs">
+        <button class="nav-btn active" id="dtab-ideas" onclick="switchTab('ideas')">🍽️ What To Eat</button>
+        <button class="nav-btn" id="dtab-calendar" onclick="switchTab('calendar')">📅 Planner</button>
+        <button class="nav-btn" id="dtab-pricing" onclick="switchTab('pricing')">⭐ Upgrade to Pro</button>
+        <button class="nav-btn" id="dtab-pantry" onclick="switchTab('pantry')">📦 Pantry</button>
+        <button class="nav-btn" id="dtab-shopping" onclick="switchTab('shopping')">🛒 Shopping</button>
+      </div>
+
+      <div class="header-right-controls">
+        <span id="tierBadge" class="plan-badge plan-free" onclick="switchTab('pricing')">FREE TIER</span>
+        <span id="activeUserBadge" class="user-pill-badge" onclick="openOnboarding()">👤 Guest</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- GEO RESTAURANT AD (FREE TIER ONLY) -->
+    <div id="geoAdCard" class="ad-card">
+      <div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="ad-tag">SPONSORED DINE-OUT</span>
+          <b style="font-size:0.85rem; color:#fff;" id="geoCityHeading">🍽️ Tired of cooking tonight in Calgary?</b>
+        </div>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Explore top-rated local dining & delivery options right in your area.</p>
+      </div>
+      <button class="btn btn-amber btn-sm" onclick="openLocalTakeout()">View Local Restaurants</button>
+    </div>
+
+    <!-- TAB 1: WHAT TO EAT -->
+    <div id="tab-ideas" style="display:block;">
+      <div class="card">
+        <div class="card-title">✨ Meal Recommendation Engine</div>
+        <div class="meal-selector">
+          <button class="meal-time-btn" id="btn-Breakfast" onclick="setMealTime('Breakfast')">Breakfast</button>
+          <button class="meal-time-btn" id="btn-Lunch" onclick="setMealTime('Lunch')">Lunch</button>
+          <button class="meal-time-btn active" id="btn-Dinner" onclick="setMealTime('Dinner')">Dinner</button>
+          <button class="meal-time-btn" id="btn-Snack" onclick="setMealTime('Snack')">🥨 Snack</button>
+        </div>
+
+        <div class="action-btn-row">
+          <button class="btn btn-blue btn-sm" onclick="triggerSearch()">🔍 Search Recipe</button>
+          <button class="btn btn-purple btn-sm" onclick="triggerLuckyChoice()">🎲 Lucky Choice</button>
+          <button class="btn btn-amber btn-sm" onclick="triggerAIChef()">⚡ AI Chef</button>
+        </div>
+
+        <div class="cuisine-row-compact" id="cuisineFilters">
+          <div class="pill active" onclick="filterCuisine('All')">🍽️ All</div>
+          <div class="pill" onclick="filterCuisine('Canada')">🍁 Canada</div>
+          <div class="pill" onclick="filterCuisine('Italian')">🍝 Italian</div>
+          <div class="pill" onclick="filterCuisine('Mexican')">🌮 Mexican</div>
+          <div class="pill" onclick="filterCuisine('Western')">🍔 Western</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <div class="card-title">Best Options for <span id="activeMealTimeLabel" style="color:var(--accent-amber); margin-left:4px;">Dinner</span>:</div>
+          <button class="btn btn-blue btn-sm" onclick="handleCycleClick()">🔄 Show 3 Different Options</button>
+        </div>
+        <div id="mealOptionsGrid" class="grid-cards"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CALENDAR -->
+    <div id="tab-calendar" style="display:none;">
+      <div class="card">
+        <div class="card-title">📅 Meal Planner Calendar</div>
+        <div id="calendarStatusText" style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 10px 0;">Showing 7-Day Current Week. Upgrade to Pro to unlock the full 30-Day Outlook & Chef Assignment.</div>
+        <div id="calendarGridDisplay" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: PRICING & PAYMENT CONNECTORS -->
+    <div id="tab-pricing" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold-pro);">⭐ Choose Your Dining Plan</div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Simple, transparent pricing to supercharge your kitchen routine.</p>
+
+        <div class="pricing-table">
+          <!-- FREE TIER -->
+          <div class="pricing-card">
+            <h3 style="color:#94a3b8; font-size:1.1rem;">Free Starter</h3>
+            <div style="font-size:1.4rem; font-weight:800; color:#fff; margin:8px 0;">$0</div>
+            <p style="font-size:0.72rem; color:var(--text-muted);">Ad-supported household tools</p>
+            <ul style="text-align:left; font-size:0.75rem; margin:14px 0; line-height:1.7; list-style:none;">
+              <li>✓ 30+ World Cuisine Suggestions</li>
+              <li>✓ Base Measured Ingredients View</li>
+              <li>✓ 7-Day Planning Calendar</li>
+              <li>✓ Up to 20 Pantry Items</li>
+              <li>✓ Up to 10 Shopping List Items</li>
+              <li style="color:#f87171;">❌ Step-by-Step Cooking Instructions</li>
+              <li style="color:#f87171;">❌ Recipe Cycling (Limited to top 3)</li>
+              <li style="color:#f87171;">❌ Contains Local Restaurant Ads</li>
+            </ul>
+            <button class="btn btn-sm" style="width:100%;" disabled>Current Active Plan</button>
+          </div>
+
+          <!-- PRO TIER -->
+          <div class="pricing-card popular">
+            <span style="background:var(--gold-pro); color:#000; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:4px;">RECOMMENDED</span>
+            <h3 style="color:var(--gold-pro); font-size:1.1rem; margin-top:4px;">Pro Family Tier</h3>
+            <div style="font-size:1.4rem; font-weight:800; color:#fff; margin:8px 0;">$5.99 <span style="font-size:0.75rem; font-weight:normal; color:var(--text-muted);">/ mo</span></div>
+            <p style="font-size:0.72rem; color:#86efac;">or $49.99 / year (Save 30%)</p>
+            <ul style="text-align:left; font-size:0.75rem; margin:14px 0; line-height:1.7; list-style:none;">
+              <li>⭐ <b>100% Ad-Free Experience</b></li>
+              <li>⭐ <b>Full Cooking & Preparation Guides</b></li>
+              <li>⭐ <b>Unlimited Recipe Rotation & Cycling</b></li>
+              <li>⭐ <b>Unlimited Live Pantry & Grocery Lists</b></li>
+              <li>⭐ <b>Full 30-Day Calendar & Chef Assignments</b></li>
+              <li>⭐ <b>Receipt / OCR Ingredient Batch Import</b></li>
+              <li>⭐ <b>Printable Family Gift Cookbook PDF</b></li>
+            </ul>
+
+            <!-- STRIPE CONNECTOR -->
+            <button class="payment-btn-stripe" onclick="processStripeCheckout()">
+              <span>Pay with <b>Stripe</b></span>
+            </button>
+
+            <!-- PAYPAL CONNECTOR -->
+            <button class="payment-btn-paypal" onclick="processPayPalCheckout()">
+              <span>Pay with <b>PayPal</b></span>
+            </button>
+
+            <button class="btn btn-gold btn-sm" style="width:100%; margin-top:8px;" onclick="simulateProActivation()">
+              ⚡ Instant Sandbox Upgrade (Test Mode)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PANTRY -->
+    <div id="tab-pantry" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div class="card-title">📦 Live Pantry Inventory</div>
+            <div id="pantryQuotaText" style="font-size:0.72rem; color:var(--text-muted);">Free Tier: 0 / 20 items used</div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="handleAddPantryItem()">+ Add Item</button>
+        </div>
+        <div id="pantryList" class="vertical-list-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: SHOPPING -->
+    <div id="tab-shopping" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div class="card-title">🛒 Smart Grocery List</div>
+            <div id="shoppingQuotaText" style="font-size:0.72rem; color:var(--text-muted);">Free Tier: 0 / 10 items used</div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="handleAddShoppingItem()">+ Add Item</button>
+        </div>
+        <div id="shoppingList" class="vertical-list-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONBOARDING WELCOME & CAROUSEL MODAL -->
+  <div id="welcomeModal" class="modal-overlay">
+    <div class="card" style="max-width:480px; width:100%;">
+      <div style="text-align:center; margin-bottom:10px;">
+        <span style="font-size:2.2rem;">👨‍🍳</span>
+        <h2 style="color:#fff; font-size:1.2rem;">Welcome to Stu's Meal Planner</h2>
+        <p style="font-size:0.78rem; color:var(--text-muted);">Automate your kitchen, cut food waste, and plan delicious dinners.</p>
+      </div>
+
+      <div class="onboarding-carousel-box" id="carouselSlideBox">
+        <div id="carouselContent"></div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+        <input type="text" id="onboardingUserName" placeholder="Create your User ID / Name (e.g. Sean)..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.85rem;">
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-green" style="flex:1; padding:8px;" onclick="registerUser()">Register User</button>
+          <button class="btn" style="flex:1; padding:8px;" onclick="continueAsGuest()">Try as Guest</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECIPE DETAIL MODAL (FREE VS PRO PREVIEW) -->
+  <div id="recipeModal" class="modal-overlay">
+    <div class="card" style="max-width:540px; width:100%; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title" id="recModalTitle">📖 Recipe</div>
+        <button class="btn btn-sm" onclick="closeRecipeModal()">✕</button>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;" id="recModalMeta">⏱️ 30 mins • 🔥 520 kcal</div>
+
+      <b style="font-size:0.82rem; color:var(--accent-amber);">Measured Ingredients:</b>
+      <div id="recModalIngList" style="font-size:0.78rem; color:#fff; margin:6px 0 12px 0; line-height:1.6;"></div>
+
+      <b style="font-size:0.82rem; color:var(--accent-purple);">Step-by-Step Cooking Instructions:</b>
+      <div id="recModalInstructionsContainer" style="margin-top:6px;"></div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+        <button class="btn" onclick="closeRecipeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYWALL PROMPT MODAL -->
+  <div id="paywallModal" class="modal-overlay">
+    <div class="card" style="max-width:440px; width:100%; text-align:center;">
+      <span style="font-size:2.2rem;">⭐</span>
+      <h3 style="color:var(--gold-pro); margin:8px 0 4px 0;" id="paywallTitle">Pro Feature Required</h3>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:14px;" id="paywallMessage">Upgrade to Stu's Meal Planner Pro to unlock full features without limits.</p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" style="flex:1;" onclick="closePaywallModal()">Maybe Later</button>
+        <button class="btn btn-gold" style="flex:1;" onclick="closePaywallModal(); switchTab('pricing');">View Pro Plans</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentProfile = "Guest";
+    let isProUser = false;
+    let userCity = "Calgary";
+    let activeMealTime = "Dinner";
+    let activeCuisine = "All";
+    let categoryPageOffset = 0;
+    let carouselIndex = 0;
+
+    // STRIPE & PAYPAL PUBLIC API KEYS / CONFIGURATION
+    const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/test_eVaeV07bB89..."; // Replace with your live Stripe payment link
+    const PAYPAL_SUBSCRIPTION_URL = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=..."; // Replace with your PayPal plan ID
+
+    const carouselSlides = [
+      {
+        icon: "🍽️",
+        title: "Curated Daily Meal Options",
+        desc: "Get 3 balanced meal options for Breakfast, Lunch, Dinner, or Snack across 30+ world cuisines."
+      },
+      {
+        icon: "📦",
+        title: "Live Pantry & Smart Groceries",
+        desc: "Track home stock. The app flags missing items and adds measured quantities to your shopping list."
+      },
+      {
+        icon: "⭐",
+        title: "Ad-Free & Unlimited Pro",
+        desc: "Upgrade to unlock step-by-step cooking instructions, unlimited recipe cycling, and 30-day family planning."
+      }
+    ];
+
+    let pantryData = [
+      { name: "Ground Beef (Lean 85/15)", qty: 1, category: "Proteins" },
+      { name: "Hass Avocado", qty: 3, category: "Produce" },
+      { name: "Arborio Rice", qty: 4, category: "Starches" },
+      { name: "Pure Canadian Maple Syrup", qty: 1, category: "Condiments" }
+    ];
+
+    let shoppingList = [
+      { name: "Corn Tortillas (Pack of 12)", qty: 2, note: "For Beef Tacos" },
+      { name: "Fresh Cilantro Bunch", qty: 1, note: "Garnish" }
+    ];
+
+    let mealsDatabase = [
+      {
+        name: "French-Canadian Tourtière Meat Pie",
+        cuisine: "CANADA",
+        time: "Dinner",
+        timeEst: "45 mins",
+        cal: "590 kcal",
+        img: "https://images.unsplash.com/photo-1572448862527-d3c904757de6?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1 lb Lean Ground Beef", "1 lb Ground Pork", "1 Diced Yellow Onion", "2 Pie Crust Pastry Shells", "1/2 tsp Clove and Cinnamon"],
+        instructions: ["Sauté ground beef, pork, and diced onions with clove, cinnamon, and savory herbs.", "Line pie dish, fill with meat, and cover with pastry crust.", "Bake at 375°F for 35 mins until golden and bubbly."]
+      },
+      {
+        name: "Wild Pacific Maple-Glazed Salmon",
+        cuisine: "CANADA",
+        time: "Dinner",
+        timeEst: "25 mins",
+        cal: "540 kcal",
+        img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["2 Fresh Salmon Fillets", "3 tbsp Pure Maple Syrup", "1 tbsp Dijon Mustard", "2 Cloves Minced Garlic"],
+        instructions: ["Whisk pure maple syrup with Dijon mustard, minced garlic, and soy sauce.", "Brush heavily over salmon fillets on a lined baking tray.", "Bake at 400°F for 12-14 minutes until caramelized."]
+      },
+      {
+        name: "Street Style Beef Tacos",
+        cuisine: "MEXICAN",
+        time: "Dinner",
+        timeEst: "25 mins",
+        cal: "530 kcal",
+        img: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["4 Corn Tortillas", "1.5 lbs Lean Ground Beef", "2 Hass Avocados", "1 Fresh Lime", "1 Bunch Cilantro"],
+        instructions: ["Brown ground beef in skillet with cumin, chili powder, and garlic.", "Warm corn tortillas on dry skillet.", "Assemble tacos with beef, diced avocado, cilantro, and fresh lime juice."]
+      },
+      {
+        name: "Creamy Garlic Mushroom Risotto",
+        cuisine: "ITALIAN",
+        time: "Dinner",
+        timeEst: "35 mins",
+        cal: "520 kcal",
+        img: "https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1.5 cups Arborio Rice", "2 cups Sliced Cremini Mushrooms", "3 Cloves Garlic", "1/2 cup Grated Parmesan"],
+        instructions: ["Sauté mushrooms and garlic in butter.", "Add rice and toast for 2 mins.", "Ladle warm broth gradually until creamy, folding in Parmesan cheese."]
+      },
+      {
+        name: "Peameal Bacon Breakfast Sandwich",
+        cuisine: "CANADA",
+        time: "Breakfast",
+        timeEst: "15 mins",
+        cal: "460 kcal",
+        img: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["2 Slices Peameal Bacon", "2 Eggs", "2 Brioche Buns", "1 tbsp Maple Mustard"],
+        instructions: ["Pan-fry peameal bacon for 3 mins per side.", "Fry eggs in skillet.", "Assemble on toasted brioche buns with maple mustard."]
+      },
+      {
+        name: "Sourdough Avocado Toast & Eggs",
+        cuisine: "WESTERN",
+        time: "Breakfast",
+        timeEst: "15 mins",
+        cal: "380 kcal",
+        img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["2 Slices Sourdough", "2 Avocados", "2 Eggs", "1 tbsp Olive Oil"],
+        instructions: ["Toast sourdough.", "Coarsely mash avocado with olive oil, salt, and pepper.", "Top toast with warm fried eggs."]
+      },
+      {
+        name: "Belgian Waffles & Pure Maple Syrup",
+        cuisine: "CANADA",
+        time: "Breakfast",
+        timeEst: "20 mins",
+        cal: "450 kcal",
+        img: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["2 cups Waffle Mix", "1/4 cup Butter", "1/2 cup Pure Maple Syrup"],
+        instructions: ["Whisk waffle mix with milk and melted butter.", "Cook in waffle iron 4-5 mins.", "Serve with warm pure Canadian maple syrup."]
+      },
+      {
+        name: "Montreal-Style Smoked Meat Sandwich",
+        cuisine: "CANADA",
+        time: "Lunch",
+        timeEst: "15 mins",
+        cal: "620 kcal",
+        img: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1/2 lb Montreal Smoked Meat", "2 Slices Rye Bread", "1 tbsp Yellow Mustard", "1 Dill Pickle"],
+        instructions: ["Steam sliced brisket for 5 mins.", "Spread yellow mustard across fresh rye.", "Stack meat high and serve with pickle."]
+      },
+      {
+        name: "Quebec Classic Curd Poutine",
+        cuisine: "CANADA",
+        time: "Lunch",
+        timeEst: "20 mins",
+        cal: "710 kcal",
+        img: "https://images.unsplash.com/photo-1586816001966-79b736744398?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["3 Russet Potatoes", "1 cup Squeaky Cheese Curds", "1 cup Hot Brown Gravy"],
+        instructions: ["Bake cut fries at 400°F until golden.", "Layer fresh cheese curds over hot fries.", "Smother with piping hot gravy."]
+      },
+      {
+        name: "Pub Burger & Fries",
+        cuisine: "PUB FOOD",
+        time: "Lunch",
+        timeEst: "30 mins",
+        cal: "780 kcal",
+        img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1/2 lb Ground Beef", "1 Brioche Bun", "1 Sliced Onion", "1 cup Fries"],
+        instructions: ["Form thick patty and sear 4 mins per side.", "Caramelize onions.", "Assemble burger and serve with hot fries."]
+      },
+      {
+        name: "Classic Canadian Butter Tarts",
+        cuisine: "CANADA",
+        time: "Snack",
+        timeEst: "25 mins",
+        cal: "290 kcal",
+        img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["6 Tart Shells", "1/2 cup Brown Sugar", "1/4 cup Butter", "2 tbsp Maple Syrup"],
+        instructions: ["Whisk melted butter, brown sugar, maple syrup, and egg.", "Pour into tart shells.", "Bake at 375°F for 15-18 mins until bubbly."]
+      },
+      {
+        name: "Traditional Nanaimo Bars",
+        cuisine: "CANADA",
+        time: "Snack",
+        timeEst: "20 mins",
+        cal: "320 kcal",
+        img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1 cup Graham Crumbs", "1/2 cup Custard Powder", "1 cup Chocolate Chips", "1/2 cup Butter"],
+        instructions: ["Press cocoa crumb base into square pan.", "Spread whipped custard butter layer.", "Top with melted chocolate and chill 1 hour."]
+      },
+      {
+        name: "Mediterranean Hummus & Pita Crisp",
+        cuisine: "MEDITERRANEAN",
+        time: "Snack",
+        timeEst: "5 mins",
+        cal: "240 kcal",
+        img: "https://images.unsplash.com/photo-1577906096429-f73c2c312435?auto=format&fit=crop&w=600&q=80",
+        ingredients: ["1/2 cup Roasted Garlic Hummus", "1 Pita Bread", "1 tbsp Olive Oil", "Paprika"],
+        instructions: ["Toast pita bread.", "Plate hummus with olive oil and paprika.", "Serve with cucumber slices."]
+      }
+    ];
+
+    function checkPantryStock(ingredientText) {
+      const lower = ingredientText.toLowerCase();
+      return pantryData.some(p => lower.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(lower));
+    }
+
+    function renderMealOptions() {
+      const grid = document.getElementById('mealOptionsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      let pool = mealsDatabase.filter(m => m.time.toLowerCase() === activeMealTime.toLowerCase());
+      if (activeCuisine !== 'All') {
+        const cMatch = pool.filter(m => m.cuisine.toLowerCase() === activeCuisine.toLowerCase());
+        if (cMatch.length > 0) pool = cMatch;
+      }
+      if (pool.length === 0) pool = mealsDatabase.filter(m => m.time.toLowerCase() === activeMealTime.toLowerCase());
+      if (pool.length === 0) pool = mealsDatabase;
+
+      const total = pool.length;
+      let selected = [];
+      for (let i = 0; i < 3; i++) {
+        selected.push(pool[(categoryPageOffset + i) % total]);
+      }
+
+      grid.innerHTML = selected.map(meal => {
+        let ingBadges = (meal.ingredients || []).map(ing => {
+          const inStock = checkPantryStock(ing);
+          return `<span class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">${inStock ? '✓ In Stock' : '🛒 Needed'}</span>`;
+        }).join('');
+
+        return `
+          <div class="meal-card">
+            <img src="${meal.img}" class="meal-card-img" alt="${meal.name}">
+            <div class="meal-card-body">
+              <span style="font-size:0.65rem; background:#334155; color:#fbbf24; padding:2px 6px; border-radius:4px; font-weight:700; width:fit-content;">${meal.cuisine}</span>
+              <b style="font-size:0.95rem; margin:4px 0;">${meal.name}</b>
+              <div style="font-size:0.72rem; color:var(--text-muted);">⏱️ ${meal.timeEst} • 🔥 ${meal.cal}</div>
+
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:8px; font-weight:700;">Measured Ingredients:</div>
+              <div style="font-size:0.73rem; color:#e2e8f0; line-height:1.4; margin-top:2px;">${meal.ingredients.slice(0, 3).join(', ')}...</div>
+
+              <button class="btn btn-purple btn-sm" style="margin-top:10px; width:100%; justify-content:center;" onclick="openRecipeDetail('${meal.name}')">
+                📖 View Recipe & Instructions
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleCycleClick() {
+      if (!isProUser) {
+        showPaywall("Unlimited Recipe Rotation", "Free tier displays the top 3 curated recommendations. Upgrade to Pro to cycle through unlimited dishes on demand.");
+        return;
+      }
+      categoryPageOffset += 3;
+      renderMealOptions();
+    }
+
+    function openRecipeDetail(mealName) {
+      const meal = mealsDatabase.find(m => m.name === mealName);
+      if (!meal) return;
+
+      document.getElementById('recModalTitle').innerText = `📖 ${meal.name}`;
+      document.getElementById('recModalMeta').innerText = `⏱️ ${meal.timeEst} • 🔥 ${meal.cal} • Cuisine: ${meal.cuisine}`;
+      document.getElementById('recModalIngList').innerHTML = meal.ingredients.map(i => `• ${i}`).join('<br>');
+
+      const instContainer = document.getElementById('recModalInstructionsContainer');
+      if (isProUser) {
+        instContainer.innerHTML = meal.instructions.map((step, idx) => `
+          <div style="background:#0f172a; padding:8px 10px; border-radius:6px; margin-bottom:6px; font-size:0.78rem; border-left:3px solid var(--accent-amber);">
+            <b>Step ${idx + 1}:</b> ${step}
+          </div>
+        `).join('');
+      } else {
+        instContainer.innerHTML = `
+          <div class="lock-banner">
+            <span>🔒 Cooking Instructions locked on Free Tier</span>
+            <button class="btn btn-gold btn-sm" onclick="closeRecipeModal(); switchTab('pricing');">Unlock Pro</button>
+          </div>
+          <div style="filter:blur(3px); opacity:0.4; pointer-events:none; margin-top:6px; font-size:0.75rem;">
+            1. Prep skillet with 2 tbsp extra virgin olive oil over medium-high heat.<br>
+            2. Combine seasoned aromatics and sear ingredients until golden brown.<br>
+            3. Reduce heat, simmer sauces, and plate with fresh culinary garnish.
+          </div>
+        `;
+      }
+
+      document.getElementById('recipeModal').style.display = 'flex';
+    }
+
+    function closeRecipeModal() {
+      document.getElementById('recipeModal').style.display = 'none';
+    }
+
+    function showPaywall(featureTitle, message) {
+      document.getElementById('paywallTitle').innerText = featureTitle;
+      document.getElementById('paywallMessage').innerText = message;
+      document.getElementById('paywallModal').style.display = 'flex';
+    }
+
+    function closePaywallModal() {
+      document.getElementById('paywallModal').style.display = 'none';
+    }
+
+    function setMealTime(time) {
+      activeMealTime = time;
+      categoryPageOffset = 0;
+      document.querySelectorAll('.meal-time-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-${time}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      const label = document.getElementById('activeMealTimeLabel');
+      if (label) label.innerText = time;
+      renderMealOptions();
+    }
+
+    function filterCuisine(c) {
+      activeCuisine = c;
+      categoryPageOffset = 0;
+      document.querySelectorAll('#cuisineFilters .pill').forEach(p => {
+        p.classList.toggle('active', p.innerText.includes(c) || (c === 'All' && p.innerText.includes('All')));
+      });
+      renderMealOptions();
+    }
+
+    function switchTab(tabId) {
+      ['ideas', 'calendar', 'pricing', 'pantry', 'shopping'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.style.display = (t === tabId) ? 'block' : 'none';
+        const dbtn = document.getElementById(`dtab-${t}`);
+        if (dbtn) dbtn.classList.toggle('active', t === tabId);
+      });
+      if (tabId === 'ideas') renderMealOptions();
+      if (tabId === 'calendar') renderCalendar();
+      if (tabId === 'pantry') renderPantry();
+      if (tabId === 'shopping') renderShopping();
+    }
+
+    function renderCalendar() {
+      const container = document.getElementById('calendarGridDisplay');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const maxDays = isProUser ? 30 : 7;
+      
+      document.getElementById('calendarStatusText').innerText = isProUser 
+        ? "⭐ Pro Active: Full 30-Day Outlook & Chef Schedule Unlocked" 
+        : "Free Tier: 7-Day View. Upgrade to Pro for 30-day family planning.";
+
+      let html = '';
+      for (let i = 1; i <= maxDays; i++) {
+        html += `
+          <div style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:10px;">
+            <b style="color:var(--accent-amber); font-size:0.8rem;">${days[(i-1)%7]} Day #${i}</b>
+            <div style="font-size:0.72rem; color:#fff; margin-top:4px;">Dinner: Tourtière / Salmon</div>
+            <div style="font-size:0.65rem; color:#a5b4fc; margin-top:2px;">Chef: ${currentProfile}</div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    function renderPantry() {
+      const container = document.getElementById('pantryList');
+      if (!container) return;
+      document.getElementById('pantryQuotaText').innerText = isProUser 
+        ? `⭐ Pro Active: Unlimited Items (${pantryData.length} in stock)` 
+        : `Free Tier: ${pantryData.length} / 20 items used`;
+
+      container.innerHTML = pantryData.map((item, idx) => `
+        <div class="list-item-row">
+          <div>
+            <b>${item.name}</b> <small style="color:var(--text-muted);">(${item.category})</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>Qty: ${item.qty}</span>
+            <button class="btn btn-red btn-sm" onclick="removePantry(${idx})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleAddPantryItem() {
+      if (!isProUser && pantryData.length >= 20) {
+        showPaywall("Pantry Capacity Limit Reached", "Free tier accounts are capped at 20 items. Upgrade to Pro for unlimited stock tracking and receipt OCR scanning.");
+        return;
+      }
+      const name = prompt("Enter pantry item name:");
+      if (!name) return;
+      pantryData.push({ name: name.trim(), qty: 1, category: "General" });
+      renderPantry();
+    }
+
+    function removePantry(idx) {
+      pantryData.splice(idx, 1);
+      renderPantry();
+    }
+
+    function renderShopping() {
+      const container = document.getElementById('shoppingList');
+      if (!container) return;
+      document.getElementById('shoppingQuotaText').innerText = isProUser 
+        ? `⭐ Pro Active: Unlimited Items (${shoppingList.length} needed)` 
+        : `Free Tier: ${shoppingList.length} / 10 items used`;
+
+      container.innerHTML = shoppingList.map((item, idx) => `
+        <div class="list-item-row">
+          <div>
+            <b>${item.name}</b> <br><small style="color:#fbbf24;">${item.note || ''}</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>Qty: ${item.qty}</span>
+            <button class="btn btn-red btn-sm" onclick="removeShopping(${idx})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleAddShoppingItem() {
+      if (!isProUser && shoppingList.length >= 10) {
+        showPaywall("Shopping List Limit Reached", "Free tier accounts are capped at 10 items. Upgrade to Pro for unlimited grocery lists and automatic ingredient deductions.");
+        return;
+      }
+      const name = prompt("Enter shopping item name:");
+      if (!name) return;
+      shoppingList.push({ name: name.trim(), qty: 1, note: "Manual Add" });
+      renderShopping();
+    }
+
+    function removeShopping(idx) {
+      shoppingList.splice(idx, 1);
+      renderShopping();
+    }
+
+    // STRIPE & PAYPAL PAYMENT HANDLERS
+    function processStripeCheckout() {
+      if (STRIPE_CHECKOUT_URL.includes("test_")) {
+        // Sandbox direct forward
+        window.open(STRIPE_CHECKOUT_URL, "_blank");
+      } else {
+        alert("Redirecting to secure Stripe Customer Portal checkout...");
+      }
+    }
+
+    function processPayPalCheckout() {
+      window.open(PAYPAL_SUBSCRIPTION_URL, "_blank");
+    }
+
+    function simulateProActivation() {
+      isProUser = true;
+      document.getElementById('tierBadge').className = 'plan-badge plan-pro';
+      document.getElementById('tierBadge').innerText = 'PRO MEMBER';
+      document.getElementById('geoAdCard').style.display = 'none';
+      alert("🎉 Pro Membership Activated! Full cooking instructions, unlimited recipe cycling, and 30-day planner unlocked.");
+      switchTab('ideas');
+    }
+
+    function renderCarousel() {
+      const slide = carouselSlides[carouselIndex];
+      const content = document.getElementById("carouselContent");
+      const dots = document.getElementById("carouselDots");
+      if (!content || !dots) return;
+
+      content.innerHTML = `
+        <div style="text-align:center; padding:10px 0;">
+          <div style="font-size:2rem; margin-bottom:6px;">${slide.icon}</div>
+          <b style="color:var(--accent-amber); font-size:0.95rem;">${slide.title}</b>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-top:6px; line-height:1.4;">${slide.desc}</p>
+        </div>
+      `;
+      dots.innerHTML = carouselSlides.map((_, i) => `<div class="dot ${i === carouselIndex ? 'active' : ''}" onclick="setCarousel(${i})"></div>`).join('');
+    }
+
+    function setCarousel(idx) {
+      carouselIndex = idx;
+      renderCarousel();
+    }
+
+    function openOnboarding() {
+      document.getElementById('welcomeModal').style.display = 'flex';
+      renderCarousel();
+    }
+
+    function registerUser() {
+      const input = document.getElementById('onboardingUserName');
+      const name = input ? input.value.trim() : '';
+      if (!name) { alert('Please enter a user name or continue as guest.'); return; }
+      currentProfile = name;
+      document.getElementById('activeUserBadge').innerText = `👤 ${name}`;
+      document.getElementById('welcomeModal').style.display = 'none';
+    }
+
+    function continueAsGuest() {
+      currentProfile = "Guest";
+      document.getElementById('activeUserBadge').innerText = "👤 Guest";
+      document.getElementById('welcomeModal').style.display = 'none';
+    }
+
+    function detectGeolocation() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          () => { userCity = "Calgary"; updateAdContent(); },
+          () => { userCity = "Calgary"; updateAdContent(); }
+        );
+      }
+    }
+
+    function updateAdContent() {
+      const heading = document.getElementById("geoCityHeading");
+      if (heading) heading.innerText = `🍽️ Tired of cooking tonight in ${userCity}?`;
+    }
+
+    function openLocalTakeout() {
+      window.open(`https://www.google.com/maps/search/restaurants+near+${encodeURIComponent(userCity)}`, "_blank");
+    }
+
+    function triggerSearch() {
+      const q = prompt("Search recipe name:");
+      if (!q) return;
+      alert(`Search results for "${q}" available in recipe database.`);
+    }
+
+    function triggerLuckyChoice() {
+      const pool = mealsDatabase.filter(m => m.time.toLowerCase() === activeMealTime.toLowerCase());
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      openRecipeDetail(pick.name);
+    }
+
+    function triggerAIChef() {
+      if (!isProUser) {
+        showPaywall("AI Chef Limit Reached", "Free accounts are limited to 1 AI generation per day. Upgrade to Pro for unlimited generative recipes.");
+        return;
+      }
+      alert("⚡ AI Chef is generating custom combinations for you...");
+    }
+
+    function initWebEdition() {
+      renderCarousel();
+      setInterval(() => {
+        carouselIndex = (carouselIndex + 1) % carouselSlides.length;
+        renderCarousel();
+      }, 4000);
+
+      document.getElementById('welcomeModal').style.display = 'flex';
+      detectGeolocation();
+      setMealTime('Dinner');
+      renderPantry();
+      renderShopping();
+    }
+
+    initWebEdition();
+  </script>
+</body>
+</html>

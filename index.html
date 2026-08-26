@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stu's Meal Planner</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-amber: #f97316;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 75px; overflow-x: hidden; position: relative; }
+    
+    .header { background: #0f172a; border-bottom: 1px solid var(--border-color); padding: 10px 16px; position: sticky; top: 0; z-index: 500; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; max-width: 1400px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 8px; font-size: 1.15rem; font-weight: 800; color: #ffffff; white-space: nowrap; }
+    
+    .top-nav-tabs { display: flex; gap: 6px; overflow-x: auto; }
+    .nav-btn { background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; white-space: nowrap; transition: 0.15s; }
+    .nav-btn:hover { border-color: var(--accent-amber); }
+    .nav-btn.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 700; }
+    
+    .header-right-controls { display: flex; align-items: center; gap: 8px; }
+    .user-pill-badge { background: #312e81; color: #c7d2fe; border: 1px solid #4338ca; font-size: 0.75rem; font-weight: 700; padding: 5px 10px; border-radius: 14px; white-space: nowrap; cursor: pointer; }
+    .quick-add-btn { background: #064e3b; color: #34d399; border: 1px solid #059669; font-weight: 700; font-size: 0.75rem; padding: 5px 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    
+    .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 12px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px; width: 100%; box-sizing: border-box; }
+    .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 6px; color: #fff; }
+    
+    .action-btn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; width: 100%; }
+    .btn { background: #334155; color: var(--text-main); border: none; padding: 6px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; white-space: nowrap; transition: 0.15s; }
+    .btn:hover { filter: brightness(1.15); }
+    .btn-purple { background: var(--accent-purple); color: #fff; }
+    .btn-amber { background: var(--accent-amber); color: #000; }
+    .btn-blue { background: var(--accent-blue); color: #fff; }
+    .btn-green { background: var(--accent-green); color: #fff; }
+    .btn-red { background: #7f1d1d; color: #fca5a5; }
+    .btn-sm { padding: 4px 6px; font-size: 0.72rem; }
+    
+    .meal-selector { display: flex; gap: 6px; margin: 8px 0; }
+    .meal-time-btn { flex: 1; padding: 8px 4px; background: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-weight: 700; cursor: pointer; text-align: center; font-size: 0.8rem; }
+    .meal-time-btn.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); }
+    
+    .cuisine-row-compact { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pill { background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+    .pill.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 800; }
+    
+    .grid-cards { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px; }
+    .meal-card { background: #0f172a; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-space: space-between; width: 100%; box-sizing: border-box; }
+    .meal-card-img { width: 100%; height: 160px; object-fit: cover; border-bottom: 1px solid var(--border-color); background: #1e293b; }
+    .meal-card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+
+    .vertical-list-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .list-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; gap: 12px; }
+    .list-item-title { font-weight: 700; font-size: 0.9rem; color: #fff; word-break: break-word; flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .list-item-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    
+    .ing-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; min-height: 48px; align-content: flex-start; }
+    .ing-badge { font-size: 0.68rem; padding: 3px 6px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+    .ing-in-stock { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+    .ing-missing { background: #451a03; color: #fbbf24; border: 1px solid #b45309; }
+    
+    .badge-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; }
+    .badge-cuisine { background: #334155; color: #fbbf24; }
+    .badge-match { background: #064e3b; color: #34d399; }
+    .badge-home { background: #4c1d95; color: #c084fc; border: 1px solid #7c3aed; }
+    .badge-author { background: #1e1b4b; color: #c084fc; border: 1px solid #4338ca; text-transform: none; font-size: 0.68rem; }
+    .badge-note { background: #0f172a; color: #fbbf24; border: 1px solid #b45309; font-size: 0.68rem; text-transform: none; font-weight: normal; }
+    .badge-cal { background: #1e293b; color: #f97316; border: 1px solid #ea580c; font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+    
+    .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; border-top: 1px solid var(--border-color); display: flex; justify-space-around; align-items: center; height: 60px; z-index: 500; padding: 0 2px; }
+    .mobile-tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 0.58rem; font-weight: 600; background: transparent; border: none; cursor: pointer; flex: 1; height: 100%; gap: 2px; }
+    .mobile-tab-btn.active { color: var(--accent-amber); }
+    .mobile-tab-icon { font-size: 1rem; line-height: 1; }
+
+    .qty-control { display: inline-flex; align-items: center; gap: 6px; background: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 8px; flex-shrink: 0; }
+    .qty-btn { background: transparent; border: none; color: var(--text-main); font-weight: bold; cursor: pointer; font-size: 0.9rem; padding: 0 4px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .toast-popup { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-amber); color: #000; font-weight: 800; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; z-index: 10000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+
+    .cal-controls-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+    .cal-view-btn { background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer; }
+    .cal-view-btn.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); }
+
+    .calendar-grid-monthly { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; width: 100%; }
+    .calendar-grid-weekly { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 8px; width: 100%; }
+    .calendar-grid-daily { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; width: 100%; }
+
+    .cal-day-box { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; width: 100%; }
+    .cal-day-box:hover { border-color: var(--accent-amber); }
+    .cal-meal-line { font-size: 0.73rem; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .instruction-step { display: flex; gap: 10px; margin-bottom: 10px; background: #0f172a; padding: 10px 12px; border-radius: 6px; border-left: 3px solid var(--accent-amber); font-size: 0.82rem; line-height: 1.4; }
+    .instruction-num { font-weight: 800; color: var(--accent-amber); flex-shrink: 0; }
+
+    .settings-nav-tile { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+    .settings-nav-tile:hover { border-color: var(--accent-amber); background: #162032; }
+
+    .ai-qa-box { background: #0f172a; border: 1px solid var(--accent-purple); border-radius: 8px; padding: 10px; margin-top: 14px; }
+    .ai-response-bubble { background: #1e293b; border-radius: 6px; padding: 8px; margin-top: 6px; font-size: 0.78rem; line-height: 1.4; color: #e2e8f0; display: none; }
+
+    @media (min-width: 768px) {
+      .top-nav-tabs { display: flex; }
+      .mobile-bottom-nav { display: none; }
+      body { padding-bottom: 0; }
+      .grid-cards { grid-template-columns: repeat(3, 1fr); }
+      .toast-popup { bottom: 20px; }
+    }
+    @media (max-width: 767px) {
+      .top-nav-tabs { display: none; }
+      .action-btn-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <span>👨‍🍳</span>
+        <span>Stu's Meal Planner</span>
+      </div>
+
+      <div class="top-nav-tabs">
+        <button class="nav-btn active" id="dtab-ideas" onclick="switchTab('ideas')">🍽️ What To Eat</button>
+        <button class="nav-btn" id="dtab-calendar" onclick="switchTab('calendar')">📅 Planner</button>
+        <button class="nav-btn" id="dtab-comments" onclick="switchTab('comments')">💬 Chat</button>
+        <button class="nav-btn" id="dtab-favorites" onclick="switchTab('favorites')">⭐ Starred</button>
+        <button class="nav-btn" id="dtab-pantry" onclick="switchTab('pantry')">📦 Pantry</button>
+        <button class="nav-btn" id="dtab-shopping" onclick="switchTab('shopping')">🛒 Shopping</button>
+      </div>
+
+      <div class="header-right-controls">
+        <button class="quick-add-btn" onclick="openQuickShoppingModal()" title="Quick Add Grocery Item">🛒 +</button>
+        <span id="activeUserBadge" class="user-pill-badge" onclick="openSettingsSub('profiles')">👤 Sean</span>
+        <button class="btn btn-sm" onclick="openSettings()" title="Settings & Family Hub">⚙️</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastNotification" class="toast-popup">Switched to Sean</div>
+
+  <div class="container">
+    <!-- TAB 1: IDEAS -->
+    <div id="tab-ideas" style="display:block;">
+      <div class="card">
+        <div class="card-title">✨ Meal Recommendation Engine</div>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Select category, launch AI Chef, or pick world cravings</p>
+
+        <!-- 1. MEAL TIME SELECTOR -->
+        <div style="font-size:0.72rem; font-weight:700; margin-top:10px; color:var(--text-muted);">1. SELECT MEAL TIME:</div>
+        <div class="meal-selector">
+          <button class="meal-time-btn" id="btn-Breakfast" onclick="setMealTime('Breakfast')">Breakfast</button>
+          <button class="meal-time-btn" id="btn-Lunch" onclick="setMealTime('Lunch')">Lunch</button>
+          <button class="meal-time-btn active" id="btn-Dinner" onclick="setMealTime('Dinner')">Dinner</button>
+          <button class="meal-time-btn" id="btn-Snack" onclick="setMealTime('Snack')">🥨 Snack</button>
+        </div>
+
+        <!-- 2. ACTION BUTTONS -->
+        <div class="action-btn-row">
+          <button class="btn btn-blue btn-sm" onclick="openSearchModal()">🔍 Search Recipe</button>
+          <button class="btn btn-purple btn-sm" onclick="triggerLuckyChoice()">🎲 Lucky Choice</button>
+          <button class="btn btn-amber btn-sm" onclick="triggerAIChef()">⚡ AI Chef</button>
+        </div>
+
+        <!-- 3. TOP CUISINES WITH CANADA -->
+        <div style="font-size:0.72rem; font-weight:700; margin-top:6px; color:var(--text-muted);">3. CUISINE / CRAVING FILTER:</div>
+        <div class="cuisine-row-compact" id="cuisineFilters">
+          <div class="pill active" onclick="filterCuisine('All')">🍽️ All</div>
+          <div class="pill" onclick="filterCuisine('Canada')">🍁 Canada</div>
+          <div class="pill" onclick="filterCuisine('Italian')">🍝 Italian</div>
+          <div class="pill" onclick="filterCuisine('Mexican')">🌮 Mexican</div>
+          <div class="pill" onclick="filterCuisine('Western')">🍔 Western</div>
+          <div class="pill" style="background:#312e81; color:#c7d2fe; border:1px solid #4338ca;" onclick="openCuisinePickerModal()">... More Cuisines</div>
+        </div>
+      </div>
+
+      <div id="recipeResultContainer" style="display:none;" class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-title">🔍 Recipe Lookup</div>
+          <button class="btn btn-sm" onclick="clearRecipeSearch()">✕ Close</button>
+        </div>
+        <div id="recipeResultContent"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <div class="card-title">Best Options for <span id="activeMealTimeLabel" style="color:var(--accent-amber); margin-left:4px;">Dinner</span> :</div>
+          <button class="btn btn-blue btn-sm" onclick="cycleNextOptions()">🔄 Show 3 Different Options</button>
+        </div>
+        <div id="mealOptionsGrid" class="grid-cards"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CALENDAR PLANNER -->
+    <div id="tab-calendar" style="display:none;">
+      <div class="card">
+        <div class="cal-controls-bar">
+          <div class="card-title">📅 Meal Calendar & Chef Schedule</div>
+          <div style="display:flex; gap:4px;">
+            <button class="cal-view-btn" id="cview-monthly" onclick="setCalView('monthly')">Monthly</button>
+            <button class="cal-view-btn active" id="cview-weekly" onclick="setCalView('weekly')">Weekly</button>
+            <button class="cal-view-btn" id="cview-daily" onclick="setCalView('daily')">Daily</button>
+          </div>
+        </div>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Click any day to view full Breakfast/Lunch/Dinner/Snack options, assign a chef, or vote.</p>
+        <div id="calendarDisplayContainer"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: HOUSEHOLD CHAT -->
+    <div id="tab-comments" style="display:none;">
+      <div class="card">
+        <div class="card-title">💬 Household Comments & Meal Ideas</div>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Share ideas, request recipes, or leave notes for the family</p>
+        
+        <div style="display:flex; gap:8px; margin-top:10px; margin-bottom:12px;">
+          <input type="text" id="newCommentInput" placeholder="Type a comment or meal request..." style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.85rem;" onkeyup="handleCommentKey(event)">
+          <button class="btn btn-amber" onclick="postComment()">Post</button>
+        </div>
+
+        <div id="commentsList" class="vertical-list-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: FAVORITES -->
+    <div id="tab-favorites" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div class="card-title">⭐ <span id="favProfileName">Sean</span>'s Starred Favorites</div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Your household's favorite meals and custom family recipes</p>
+          </div>
+          <button class="btn btn-purple btn-sm" onclick="openCookbookModal()">📖 Create Family Gift Cookbook</button>
+        </div>
+        <div id="favoritesGrid" class="grid-cards" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: PANTRY -->
+    <div id="tab-pantry" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div class="card-title">📦 Live Pantry Inventory</div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-blue btn-sm" onclick="togglePantryOCR()">📄 OCR / Batch Text</button>
+            <button class="btn btn-green btn-sm" onclick="promptSmartAddItem('pantry')">+ Add Item</button>
+          </div>
+        </div>
+
+        <div id="pantryOCRBox" style="display:none; background:#0f172a; border:1px dashed var(--border-color); border-radius:8px; padding:12px; margin-top:10px;">
+          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Paste Receipt / OCR Ingredients List:</b>
+          <p style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Paste comma-separated or line-by-line ingredients to batch import into Pantry:</p>
+          <textarea id="pantryOCRText" rows="3" placeholder="Ground Beef, Garlic, Avocado, Arborio Rice..." style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.78rem;"></textarea>
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:6px;">
+            <button class="btn btn-sm" onclick="togglePantryOCR()">Cancel</button>
+            <button class="btn btn-green btn-sm" onclick="processPantryOCR()">Import to Pantry</button>
+          </div>
+        </div>
+
+        <div id="pantryList" class="vertical-list-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: SHOPPING LIST -->
+    <div id="tab-shopping" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div class="card-title">🛒 Shopping List</div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-blue btn-sm" onclick="copyShoppingListText()">📋 Export Text List</button>
+            <button class="btn btn-green btn-sm" onclick="promptSmartAddItem('shopping')">+ Add Item</button>
+          </div>
+        </div>
+        <div id="shoppingListGrid" class="vertical-list-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <div class="mobile-bottom-nav">
+    <button class="mobile-tab-btn active" id="mtab-ideas" onclick="switchTab('ideas')">
+      <span class="mobile-tab-icon">🍽️</span>
+      <span>Ideas</span>
+    </button>
+    <button class="mobile-tab-btn" id="mtab-calendar" onclick="switchTab('calendar')">
+      <span class="mobile-tab-icon">📅</span>
+      <span>Plan</span>
+    </button>
+    <button class="mobile-tab-btn" id="mtab-comments" onclick="switchTab('comments')">
+      <span class="mobile-tab-icon">💬</span>
+      <span>Chat</span>
+    </button>
+    <button class="mobile-tab-btn" id="mtab-favorites" onclick="switchTab('favorites')">
+      <span class="mobile-tab-icon">⭐</span>
+      <span>Starred</span>
+    </button>
+    <button class="mobile-tab-btn" id="mtab-pantry" onclick="switchTab('pantry')">
+      <span class="mobile-tab-icon">📦</span>
+      <span>Pantry</span>
+    </button>
+    <button class="mobile-tab-btn" id="mtab-shopping" onclick="switchTab('shopping')">
+      <span class="mobile-tab-icon">🛒</span>
+      <span>Shop</span>
+    </button>
+  </div>
+
+  <!-- ONBOARDING REGISTRATION MODAL -->
+  <div id="registerModal" class="modal-overlay">
+    <div class="card" style="max-width:440px; width:100%;">
+      <div class="card-title" style="margin-bottom:8px;">👋 Welcome to Stu's Meal Planner</div>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">Create your primary user profile to get started with custom preferences, allergies, and family schedules:</p>
+      <input type="text" id="regUserNameInput" placeholder="Enter your name (e.g. Sean, Alex)..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.85rem; margin-bottom:12px;">
+      <button class="btn btn-green" style="width:100%; justify-content:center; padding:10px;" onclick="completeRegistration()">Get Started</button>
+    </div>
+  </div>
+
+  <!-- CUISINE PICKER POPUP -->
+  <div id="cuisinePickerModal" class="modal-overlay">
+    <div class="card" style="max-width:540px; width:100%; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">🌍 Select Cuisine (30+ Styles)</div>
+        <button class="btn btn-sm" onclick="closeCuisinePickerModal()">✕</button>
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Choose any world culinary style to filter your recipe recommendations:</p>
+      <div id="modalCuisineGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px;"></div>
+    </div>
+  </div>
+
+  <!-- QUICK ADD SHOPPING ITEM MODAL -->
+  <div id="quickShoppingModal" class="modal-overlay">
+    <div class="card" style="max-width:440px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">🛒 Quick Add to Shopping List</div>
+        <button class="btn btn-sm" onclick="closeQuickShoppingModal()">✕</button>
+      </div>
+      <input type="text" id="quickItemName" placeholder="Item name (e.g. Chicken, Steak, Bread)..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.85rem; margin-bottom:10px;" onkeyup="handleQuickShopKey(event)">
+      <div style="display:flex; justify-content:flex-end; gap:6px;">
+        <button class="btn" onclick="closeQuickShoppingModal()">Cancel</button>
+        <button class="btn btn-green" onclick="submitQuickShopItem()">Add to List</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAMILY GIFT COOKBOOK GENERATOR MODAL -->
+  <div id="cookbookModal" class="modal-overlay">
+    <div class="card" style="max-width:680px; width:100%; max-height:88vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="card-title">📖 Family Gift Cookbook Creator</div>
+        <button class="btn btn-sm" onclick="closeCookbookModal()">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:0.8rem; margin-bottom:14px;">
+        <label>Cookbook Title:
+          <input type="text" id="cbTitle" value="Our Family's Favorite Recipes" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+        </label>
+        <label>Subtitle / Family Dedication:
+          <input type="text" id="cbSubtitle" value="Curated with love by the Uniacke Family" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+        </label>
+        <label>Introductory Greeting / Message:
+          <textarea id="cbDedication" rows="2" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">A special collection of our all-time favorite household dishes, perfected for date nights and family dinners.</textarea>
+        </label>
+        <label>Cover Photo URL:
+          <input type="text" id="cbCoverImg" value="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+        </label>
+      </div>
+
+      <div style="font-weight:700; font-size:0.85rem; color:var(--accent-amber); margin-bottom:8px;">Live Cookbook Preview:</div>
+      <div id="cookbookPreviewContainer"></div>
+
+      <div style="display:flex; justify-content:space-between; gap:8px; margin-top:14px;">
+        <button class="btn btn-blue" onclick="printCookbookPDF()">🖨️ Print / Save as PDF Gift</button>
+        <button class="btn" onclick="closeCookbookModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD CUSTOM HOME RECIPE MODAL -->
+  <div id="customRecipeModal" class="modal-overlay">
+    <div class="card" style="max-width:540px; width:100%; max-height:88vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">🏠 Add Family / Custom Recipe</div>
+        <button class="btn btn-sm" onclick="closeCustomRecipeModal()">✕</button>
+      </div>
+
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">This recipe will be tagged as a <b>HOME RECIPE</b> and included in Lucky Choice and meal rotations!</p>
+
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:0.8rem;">
+        <label>Recipe Title:
+          <input type="text" id="custTitle" placeholder="e.g. Grandma's Famous Lasagna" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+        </label>
+
+        <div style="display:flex; gap:8px;">
+          <label style="flex:1;">Meal Time:
+            <select id="custTime" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+              <option value="Dinner">Dinner</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Breakfast">Breakfast</option>
+              <option value="Snack">Snack</option>
+            </select>
+          </label>
+          <label style="flex:1;">Cuisine Style:
+            <select id="custCuisine" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+              <option value="CANADA">Canada</option>
+              <option value="WESTERN">Western</option>
+              <option value="ITALIAN">Italian</option>
+              <option value="MEXICAN">Mexican</option>
+              <option value="CHINESE">Chinese</option>
+              <option value="SHAWARMA">Shawarma</option>
+              <option value="PUB FOOD">Pub Food</option>
+              <option value="INDIAN">Indian</option>
+              <option value="THAI">Thai</option>
+              <option value="JAPANESE">Japanese</option>
+              <option value="GREEK">Greek</option>
+              <option value="KOREAN">Korean</option>
+              <option value="FRENCH">French</option>
+              <option value="BBQ">BBQ</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <label style="flex:1;">Est Prep/Cook Time:
+            <input type="text" id="custTimeEst" placeholder="e.g. 35 mins" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+          </label>
+          <label style="flex:1;">Finished Calories (Per Serving):
+            <input type="text" id="custCal" placeholder="e.g. 580 kcal" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+          </label>
+        </div>
+
+        <label>Ingredients (comma separated with quantities):
+          <input type="text" id="custIngredients" placeholder="e.g. 1.5 lbs Ground Beef, 1 jar Marinara, 2 cups Mozzarella" style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff;">
+        </label>
+
+        <label>Detailed Cooking Instructions (one step per line):
+          <textarea id="custInstructions" rows="4" placeholder="1. Heat skillet to medium-high heat with 1 tbsp olive oil.&#10;2. Brown ground beef for 8 mins, draining fat.&#10;3. Stir in marinara sauce and simmer on low for 15 mins.&#10;4. Plate and garnish with shredded mozzarella." style="width:100%; padding:6px; margin-top:2px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff"></textarea>
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+        <button class="btn" onclick="closeCustomRecipeModal()">Cancel</button>
+        <button class="btn btn-green" onclick="saveCustomRecipe()">Save Family Recipe</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR DAY DETAILS, COMMENTS, & VOTING MODAL -->
+  <div id="calDayModal" class="modal-overlay">
+    <div class="card" style="max-width:540px; width:100%; max-height:88vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title" id="calModalDayTitle">📅 Day Meal Plan</div>
+        <button class="btn btn-sm" onclick="closeCalDayModal()">✕</button>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">Assigned Chef for Dinner:</div>
+        <select id="calModalChefSelect" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-weight:700;" onchange="saveCalModalChef(this.value)"></select>
+      </div>
+
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber);">🌅 Breakfast Plan:</div>
+        <input type="text" id="calModalBreakfastInput" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.82rem;" onchange="saveCalModalMeal('breakfast', this.value)">
+      </div>
+
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber);">☀️ Lunch Plan:</div>
+        <input type="text" id="calModalLunchInput" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.82rem;" onchange="saveCalModalMeal('lunch', this.value)">
+      </div>
+
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber);">🌙 Dinner Plan (Chef Choice):</div>
+        <input type="text" id="calModalDinnerInput" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.82rem;" onchange="saveCalModalMeal('dinner', this.value)">
+        
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; background:#0f172a; padding:8px; border-radius:6px;">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Dinner Approval Vote:</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-green btn-sm" onclick="voteCalDinner('YES')">👍 Approved</button>
+            <button class="btn btn-red btn-sm" onclick="voteCalDinner('NO')">👎 Needs Change</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber);">🥨 Snack Plan:</div>
+        <input type="text" id="calModalSnackInput" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.82rem;" onchange="saveCalModalMeal('snack', this.value)">
+      </div>
+
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber); margin-bottom:4px;">💬 Notes & Comments for this Day:</div>
+        <div id="calModalCommentsDisplay" style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px; max-height:80px; overflow-y:auto;"></div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="calModalCommentInput" placeholder="Add a note or comment for this day..." style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.8rem;">
+          <button class="btn btn-amber btn-sm" onclick="addCalDayComment()">Add Note</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:16px;">
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-purple btn-sm" style="flex:1;" onclick="sendMobilePushReminder()">📱 Push Notification to Phone</button>
+          <button class="btn btn-blue btn-sm" id="calModalReminderBtn" style="flex:1;">🔔 Download .ICS Event</button>
+        </div>
+        <button class="btn btn-green btn-sm" style="width:100%; justify-content:center;" onclick="closeCalDayModal()">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COOKING INSTRUCTIONS & AI SOUS-CHEF MODAL -->
+  <div id="instructionsModal" class="modal-overlay">
+    <div class="card" style="max-width:580px; width:100%; max-height:88vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="card-title" id="instModalTitle">📖 Detailed Cooking Instructions</div>
+        <button class="btn btn-sm" onclick="closeInstructionsModal()">✕</button>
+      </div>
+      
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px; display:flex; gap:12px; align-items:center;">
+        <span id="instModalTime">⏱️ 25 mins</span>
+        <span id="instModalCal" class="badge-cal">🔥 520 kcal Total</span>
+      </div>
+
+      <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber); margin-bottom:6px;">Required Ingredients & Measured Quantities:</div>
+      <div id="instModalIngredients" class="ing-badges" style="margin-bottom:14px;"></div>
+
+      <div style="font-weight:700; font-size:0.82rem; color:var(--accent-amber); margin-bottom:8px;">Step-by-Step Culinary Preparation:</div>
+      <div id="instModalSteps"></div>
+
+      <!-- AI SOUS-CHEF -->
+      <div class="ai-qa-box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b style="font-size:0.82rem; color:var(--accent-purple);">🤖 Ask AI Sous-Chef about this Recipe:</b>
+          <span style="font-size:0.68rem; color:var(--text-muted);">Text or Voice</span>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <input type="text" id="aiRecipeQuestionInput" placeholder="Ask e.g. How to substitute butter? Is pan hot enough?" style="flex:1; padding:6px 8px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.78rem;" onkeyup="handleAIQuestionKey(event)">
+          <button class="btn btn-purple btn-sm" onclick="askAISousChef()">Ask</button>
+          <button class="btn btn-amber btn-sm" onclick="startVoiceRecognition()" title="Speak your question">🎤</button>
+        </div>
+        <div id="aiSousChefResponse" class="ai-response-bubble"></div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button class="btn btn-blue" onclick="closeInstructionsModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH RECIPE MODAL -->
+  <div id="searchModal" class="modal-overlay">
+    <div class="card" style="max-width:480px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">🔍 Search Recipe</div>
+        <button class="btn btn-sm" onclick="closeSearchModal()">✕</button>
+      </div>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">Type any meal name to fetch cooking instructions & ingredients:</p>
+      <input type="text" id="modalRecipeQuery" placeholder="e.g. Peach Crumble, Beef Stroganoff..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.85rem;" onkeyup="handleModalSearchKey(event)">
+      <div style="display:flex; justify-content:flex-end; gap:6px;">
+        <button class="btn" onclick="closeSearchModal()">Cancel</button>
+        <button class="btn btn-purple" onclick="executeModalSearch()">Find Recipe</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS HUB -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="card" style="max-width:600px; width:100%; max-height:88vh; overflow-y:auto;">
+      
+      <div id="settingsViewMain">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="card-title">⚙️ Household Settings & Tools</div>
+          <button class="btn btn-sm" onclick="closeSettings()">✕</button>
+        </div>
+
+        <div style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom:10px;">
+          <b style="font-size:0.82rem; color:var(--accent-amber);">Current Active User:</b>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <select id="settingsUserSelect" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-weight:700;" onchange="changeProfile(this.value)"></select>
+          </div>
+        </div>
+
+        <div class="settings-nav-tile" onclick="openCustomRecipeModal(); closeSettings();">
+          <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;"><span>🏠</span> <span>Create Custom Family Recipe</span></div>
+          <span style="color:var(--text-muted);">❯</span>
+        </div>
+
+        <div class="settings-nav-tile" onclick="openSettingsSub('cuisines')">
+          <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;"><span>🌍</span> <span>Manage Cuisine Filters (Add / Delete)</span></div>
+          <span style="color:var(--text-muted);">❯</span>
+        </div>
+
+        <div class="settings-nav-tile" onclick="openSettingsSub('profiles')">
+          <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;"><span>👥</span> <span>Manage Users & Dietary Allergies</span></div>
+          <span style="color:var(--text-muted);">❯</span>
+        </div>
+
+        <div class="settings-nav-tile" onclick="openSettingsSub('ha')">
+          <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;"><span>🔗</span> <span>Home Assistant Sync & Logs</span></div>
+          <span style="color:var(--text-muted);">❯</span>
+        </div>
+
+        <div class="settings-nav-tile" onclick="openSettingsSub('data')">
+          <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;"><span>🛠️</span> <span>Data Management & Reset Tools</span></div>
+          <span style="color:var(--text-muted);">❯</span>
+        </div>
+      </div>
+
+      <div id="settingsViewCuisines" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button class="btn btn-sm" onclick="openSettingsSub('main')">❮ Back</button>
+          <b style="font-size:0.95rem; color:#fff;">🌍 Manage Cuisines</b>
+          <button class="btn btn-sm" onclick="closeSettings()">✕</button>
+        </div>
+
+        <div style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:12px;">
+          <b style="font-size:0.82rem; color:var(--accent-amber);">Add Custom World Cuisine:</b>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <input type="text" id="newCuisineInput" placeholder="e.g. Turkish, Brazilian, Ethiopian..." style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.8rem;">
+            <button class="btn btn-green btn-sm" onclick="addCustomCuisine()">+ Add</button>
+          </div>
+        </div>
+
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">Active Cuisines in System (Click to remove):</p>
+        <div id="settingsCuisineTagsList" style="display:flex; flex-wrap:wrap; gap:6px; max-height:220px; overflow-y:auto;"></div>
+      </div>
+
+      <div id="settingsViewProfiles" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button class="btn btn-sm" onclick="openSettingsSub('main')">❮ Back</button>
+          <b style="font-size:0.95rem; color:#fff;">👥 Household Profiles & Allergies</b>
+          <button class="btn btn-sm" onclick="closeSettings()">✕</button>
+        </div>
+
+        <div style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:12px;">
+          <b style="font-size:0.82rem; color:var(--accent-amber);">Register / Add User:</b>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <input type="text" id="newUserNameInput" placeholder="Enter name or user ID..." style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.8rem;">
+            <button class="btn btn-green btn-sm" onclick="addNewHouseholdUser()">+ Add User</button>
+          </div>
+        </div>
+
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">Existing Household Profiles:</p>
+        <div id="settingsProfilesList" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">Active Dietary Allergies for <b><span id="settingsUser">Sean</span></b>:</p>
+        <div id="settingsAllergiesCheckboxList" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; font-size:0.8rem;"></div>
+
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <input type="text" id="customAllergyInput" placeholder="Add new allergy (e.g. Sesame, Soy)..." style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.78rem;">
+          <button class="btn btn-amber btn-sm" onclick="addCustomAllergy()">Add Allergy</button>
+        </div>
+      </div>
+
+      <div id="settingsViewHA" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button class="btn btn-sm" onclick="openSettingsSub('main')">❮ Back</button>
+          <b style="font-size:0.95rem; color:#fff;">🔗 Home Assistant Connection</b>
+          <button class="btn btn-sm" onclick="closeSettings()">✕</button>
+        </div>
+
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">Long-Lived Access Token:</p>
+        <input type="password" id="haTokenInput" placeholder="Paste bearer token here..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#0f172a; color:#fff; font-size:0.8rem; margin-bottom:10px;">
+        <button class="btn btn-green btn-sm" style="width:100%; justify-content:center; margin-bottom:14px;" onclick="saveHAToken()">Save Connection Token</button>
+
+        <b style="font-size:0.82rem; color:var(--accent-amber);">Last 10 Home Assistant Sync Events:</b>
+        <div id="haSyncLogsList" style="background:#0f172a; border:1px solid var(--border-color); border-radius:6px; padding:8px; margin-top:6px; font-family:monospace; font-size:0.72rem; max-height:160px; overflow-y:auto;"></div>
+      </div>
+
+      <div id="settingsViewData" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button class="btn btn-sm" onclick="openSettingsSub('main')">❮ Back</button>
+          <b style="font-size:0.95rem; color:#fff;">🛠️ Data Management</b>
+          <button class="btn btn-sm" onclick="closeSettings()">✕</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-blue" onclick="resetDemoData()">🔄 Reset Calendar & Stock to Demo State</button>
+          <button class="btn btn-red" onclick="clearPantryData()">🧹 Clear Pantry Stock</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let currentProfile = "Sean";
+    let activeMealTime = "Dinner";
+    let activeCuisine = "All";
+    let activeCalView = "weekly";
+    let activeCalDayIndex = null;
+    let activeRecipeNameForAI = "";
+    let categoryPageOffset = 0;
+
+    const ENTITY_SHOPPING = "input_text.mealflow_shopping";
+    const ENTITY_PANTRY = "input_text.mealflow_pantry";
+    const TOKEN_KEY = "stu_mealflow_ha_token";
+    const LOCAL_SHOP_KEY = "stu_mealflow_shop_v140";
+    const LOCAL_PAN_KEY = "stu_mealflow_pan_v140";
+    const LOCAL_CAL_KEY = "stu_mealflow_cal_v140";
+    const LOCAL_COM_KEY = "stu_mealflow_com_v140";
+    const LOCAL_CUST_RECIPES_KEY = "stu_mealflow_cust_v140";
+    const LOCAL_USERS_KEY = "stu_mealflow_users_v140";
+    const LOCAL_ALLERGIES_KEY = "stu_mealflow_alg_v140";
+    const LOCAL_CUISINES_KEY = "stu_mealflow_cuisines_v140";
+
+    const haNotifyDeviceMap = {
+      Sean: "mobile_app_pixel_10_pro_fold",
+      Lorna: "mobile_app_lornas_iphone",
+      Mitchell: "mobile_app_mitchells_phone",
+      Lauren: "mobile_app_laurens_phone"
+    };
+
+    let haToken = localStorage.getItem(TOKEN_KEY) || "";
+    let masterAllergiesList = ["Peanuts", "Shellfish", "Dairy", "Gluten", "Cilantro"];
+    let syncEventLogs = [];
+
+    let masterCuisinesList = [
+      "Canada", "Italian", "Mexican", "Chinese", "Western", "Shawarma", "Pub Food",
+      "Indian", "Thai", "Japanese", "Greek", "Korean", "French", "BBQ",
+      "Spanish", "Vietnamese", "Turkish", "Caribbean", "Lebanese", "Brazilian",
+      "Moroccan", "German", "Ethiopian", "Hawaiian", "Cajun", "Peruvian",
+      "Swedish", "Filipino", "Portuguese", "Cuban", "Irish", "Mediterranean"
+    ];
+
+    let userSettings = {
+      Sean: { allergies: ["Shellfish"], favorites: ["Creamy Garlic Mushroom Risotto", "Wild Pacific Maple-Glazed Salmon"] },
+      Lorna: { allergies: ["Gluten"], favorites: ["Sourdough Avocado Toast & Eggs", "Classic Canadian Butter Tarts"] },
+      Mitchell: { allergies: [], favorites: ["Pub Burger & Fries", "Montreal-Style Smoked Meat Sandwich"] },
+      Lauren: { allergies: ["Dairy"], favorites: ["French-Canadian Tourtière Meat Pie"] }
+    };
+
+    let defaultPantryData = [
+      { name: "Ground Beef (Lean 85/15)", qty: 1, category: "Proteins", addedBy: "Sean" },
+      { name: "Hass Avocado", qty: 3, category: "Produce", addedBy: "Lorna" },
+      { name: "Arborio Rice", qty: 4, category: "Starches", addedBy: "Sean" },
+      { name: "Fresh Garlic Cloves", qty: 6, category: "Produce", addedBy: "Sean" },
+      { name: "Parmigiano-Reggiano Cheese", qty: 1, category: "Dairy", addedBy: "Lorna" },
+      { name: "Cremini Mushrooms", qty: 2, category: "Produce", addedBy: "Sean" }
+    ];
+
+    let defaultShoppingList = [
+      { name: "Corn Tortillas (Pack of 12)", qty: 2, category: "Bakery", addedBy: "Lorna", note: "" },
+      { name: "Fresh Cilantro Bunch", qty: 1, category: "Produce", addedBy: "Sean", note: "" }
+    ];
+
+    let mealsDatabase = [
+      // BREAKFAST
+      {
+        name: "Peameal Bacon Breakfast Sandwich",
+        cuisine: "CANADA",
+        time: "Breakfast",
+        match: "75% MATCH",
+        timeEst: "15 mins",
+        cal: "460 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Peameal Bacon", reqQty: 2 }, { name: "Eggs", reqQty: 2 }, { name: "Burger Buns", reqQty: 2 }],
+        instructions: ["Pan-fry peameal bacon slices on medium heat for 3 minutes per side.", "Fry eggs in skillet.", "Assemble in warm buns with maple mustard."]
+      },
+      {
+        name: "Sourdough Avocado Toast & Eggs",
+        cuisine: "WESTERN",
+        time: "Breakfast",
+        match: "80% MATCH",
+        timeEst: "15 mins",
+        cal: "380 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Hass Avocado", reqQty: 2 }, { name: "Eggs", reqQty: 4 }, { name: "Sourdough Bread", reqQty: 1 }],
+        instructions: ["Toast sourdough slices.", "Mash avocados with olive oil, salt, and pepper.", "Top with warm fried eggs."]
+      },
+      {
+        name: "Belgian Waffles & Pure Maple Syrup",
+        cuisine: "CANADA",
+        time: "Breakfast",
+        match: "50% MATCH",
+        timeEst: "20 mins",
+        cal: "450 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Waffle Mix", reqQty: 1 }, { name: "Butter", reqQty: 1 }, { name: "Pure Maple Syrup", reqQty: 1 }],
+        instructions: ["Preheat waffle iron.", "Whisk waffle mix with milk and melted butter.", "Cook until golden brown and drizzle with pure maple syrup."]
+      },
+      {
+        name: "Breakfast Protein Burrito",
+        cuisine: "MEXICAN",
+        time: "Breakfast",
+        match: "60% MATCH",
+        timeEst: "20 mins",
+        cal: "520 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Corn Tortillas (Pack of 12)", reqQty: 2 }, { name: "Ground Beef (Lean 85/15)", reqQty: 1 }, { name: "Eggs", reqQty: 3 }],
+        instructions: ["Brown ground beef in skillet, draining fat.", "Scramble eggs with beef.", "Roll tightly into warm tortillas."]
+      },
+      {
+        name: "Spinach, Feta & Herb Frittata",
+        cuisine: "GREEK",
+        time: "Breakfast",
+        match: "70% MATCH",
+        timeEst: "20 mins",
+        cal: "340 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Eggs", reqQty: 6 }, { name: "Spinach", reqQty: 2 }, { name: "Feta Cheese", reqQty: 1 }],
+        instructions: ["Whisk eggs with cream, salt, and black pepper.", "Sauté baby spinach in skillet.", "Pour eggs over spinach, top with crumbled feta, and bake at 375°F for 14 mins."]
+      },
+
+      // LUNCH
+      {
+        name: "Montreal-Style Smoked Meat Sandwich",
+        cuisine: "CANADA",
+        time: "Lunch",
+        match: "65% MATCH",
+        timeEst: "15 mins",
+        cal: "620 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Smoked Meat Brisket", reqQty: 2 }, { name: "Rye Bread", reqQty: 2 }, { name: "Yellow Mustard", reqQty: 1 }],
+        instructions: ["Steam sliced Montreal smoked meat for 5 mins.", "Spread yellow mustard across fresh rye bread.", "Stack meat high and serve with a dill pickle."]
+      },
+      {
+        name: "Quebec Classic Curd Poutine",
+        cuisine: "CANADA",
+        time: "Lunch",
+        match: "70% MATCH",
+        timeEst: "20 mins",
+        cal: "710 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1586816001966-79b736744398?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Russet Potatoes", reqQty: 3 }, { name: "Fresh Cheese Curds", reqQty: 2 }, { name: "Poutine Brown Gravy", reqQty: 1 }],
+        instructions: ["Crisp thick-cut fries in oven at 400°F.", "Heat rich poutine gravy.", "Layer cheese curds over hot fries and smother with gravy."]
+      },
+      {
+        name: "Pub Burger & Fries",
+        cuisine: "PUB FOOD",
+        time: "Lunch",
+        match: "70% MATCH",
+        timeEst: "30 mins",
+        cal: "780 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Ground Beef (Lean 85/15)", reqQty: 2 }, { name: "Onion", reqQty: 1 }, { name: "Burger Buns", reqQty: 2 }],
+        instructions: ["Form thick patties; season with coarse salt and pepper.", "Sear in skillet 4 mins per side.", "Assemble with onions in toasted buns."]
+      },
+      {
+        name: "Kung Pao Chicken Rice Bowl",
+        cuisine: "CHINESE",
+        time: "Lunch",
+        match: "75% MATCH",
+        timeEst: "25 mins",
+        cal: "540 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Chicken Breast", reqQty: 2 }, { name: "Peanuts", reqQty: 1 }, { name: "Arborio Rice", reqQty: 1 }],
+        instructions: ["Cook rice in water for 18 mins.", "Stir-fry diced chicken breasts in wok with 2 tbsp oil.", "Toss with Kung Pao sauce, garlic, and peanuts."]
+      },
+      {
+        name: "Chicken Shawarma Wrap",
+        cuisine: "SHAWARMA",
+        time: "Lunch",
+        match: "50% MATCH",
+        timeEst: "20 mins",
+        cal: "610 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Chicken", reqQty: 2 }, { name: "Pita Bread", reqQty: 2 }, { name: "Fresh Garlic Cloves", reqQty: 2 }],
+        instructions: ["Slice chicken thin and sear with shawarma spices for 8 mins.", "Warm pita flatbreads.", "Spread garlic sauce over pita, add chicken, and roll into wrap."]
+      },
+
+      // DINNER
+      {
+        name: "French-Canadian Tourtière Meat Pie",
+        cuisine: "CANADA",
+        time: "Dinner",
+        match: "85% MATCH",
+        timeEst: "45 mins",
+        cal: "590 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1572448862527-d3c904757de6?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Ground Beef (Lean 85/15)", reqQty: 1 }, { name: "Ground Pork", reqQty: 1 }, { name: "Pie Crust", reqQty: 2 }, { name: "Onion", reqQty: 1 }],
+        instructions: ["Sauté ground beef, pork, and diced onions with clove, cinnamon, and savory herbs.", "Line pie dish, fill with meat, and cover with crust.", "Bake at 375°F for 35 mins until golden."]
+      },
+      {
+        name: "Wild Pacific Maple-Glazed Salmon",
+        cuisine: "CANADA",
+        time: "Dinner",
+        match: "80% MATCH",
+        timeEst: "25 mins",
+        cal: "540 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Salmon Fillets", reqQty: 2 }, { name: "Pure Maple Syrup", reqQty: 1 }, { name: "Dijon Mustard", reqQty: 1 }],
+        instructions: ["Whisk maple syrup with Dijon mustard, garlic, and soy sauce.", "Brush heavily over salmon fillets.", "Bake at 400°F for 12-14 mins until caramelized."]
+      },
+      {
+        name: "Street Style Beef Tacos",
+        cuisine: "MEXICAN",
+        time: "Dinner",
+        match: "60% MATCH",
+        timeEst: "25 mins",
+        cal: "530 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Corn Tortillas (Pack of 12)", reqQty: 4 }, { name: "Ground Beef (Lean 85/15)", reqQty: 2 }, { name: "Hass Avocado", reqQty: 2 }, { name: "Fresh Cilantro Bunch", reqQty: 1 }],
+        instructions: ["Brown ground beef with chili powder, cumin, and garlic.", "Warm corn tortillas.", "Top with beef, diced avocado, cilantro, and lime."]
+      },
+      {
+        name: "Creamy Garlic Mushroom Risotto",
+        cuisine: "ITALIAN",
+        time: "Dinner",
+        match: "83% MATCH",
+        timeEst: "35 mins",
+        cal: "520 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Arborio Rice", reqQty: 2 }, { name: "Fresh Garlic Cloves", reqQty: 3 }, { name: "Parmigiano-Reggiano Cheese", reqQty: 1 }, { name: "Cremini Mushrooms", reqQty: 2 }],
+        instructions: ["Sauté sliced mushrooms and minced garlic in butter.", "Toast Arborio rice for 2 mins.", "Ladle warm broth gradually until creamy, folding in Parmesan."]
+      },
+      {
+        name: "Classic Bolognese Tagliatelle",
+        cuisine: "ITALIAN",
+        time: "Dinner",
+        match: "50% MATCH",
+        timeEst: "45 mins",
+        cal: "640 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1621996346565-e3def6164299?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Ground Beef (Lean 85/15)", reqQty: 2 }, { name: "Pasta", reqQty: 1 }, { name: "Tomato Paste", reqQty: 1 }, { name: "Fresh Garlic Cloves", reqQty: 2 }],
+        instructions: ["Brown ground beef and garlic in a saucepot for 8 mins.", "Stir in tomato paste and crushed tomatoes; simmer for 25 mins.", "Boil tagliatelle pasta in salted water for 8 mins.", "Toss pasta directly in warm Bolognese sauce."]
+      },
+
+      // SNACK
+      {
+        name: "Classic Canadian Butter Tarts",
+        cuisine: "CANADA",
+        time: "Snack",
+        match: "75% MATCH",
+        timeEst: "25 mins",
+        cal: "290 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Tart Shells", reqQty: 6 }, { name: "Brown Sugar", reqQty: 1 }, { name: "Butter", reqQty: 1 }, { name: "Pure Maple Syrup", reqQty: 1 }],
+        instructions: ["Whisk melted butter with brown sugar, maple syrup, and egg.", "Pour filling into tart shells.", "Bake at 375°F for 15-18 mins until bubbly."]
+      },
+      {
+        name: "Traditional Nanaimo Bars",
+        cuisine: "CANADA",
+        time: "Snack",
+        match: "80% MATCH",
+        timeEst: "20 mins",
+        cal: "320 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Graham Cracker Crumbs", reqQty: 1 }, { name: "Custard Powder", reqQty: 1 }, { name: "Semi-Sweet Chocolate", reqQty: 1 }],
+        instructions: ["Press graham crumb cocoa base into pan.", "Beat butter, custard powder, and sugar for middle layer.", "Melt chocolate on top; chill 1 hour before slicing."]
+      },
+      {
+        name: "Mediterranean Hummus & Pita Crisp",
+        cuisine: "MEDITERRANEAN",
+        time: "Snack",
+        match: "75% MATCH",
+        timeEst: "5 mins",
+        cal: "240 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1577906096429-f73c2c312435?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Hummus", reqQty: 1 }, { name: "Pita Bread", reqQty: 1 }, { name: "Olive Oil", reqQty: 1 }],
+        instructions: ["Toast pita bread slices for 2 mins.", "Plate roasted garlic hummus with olive oil and paprika.", "Serve with fresh cucumbers."]
+      },
+      {
+        name: "Artisan Cheese, Nuts & Crackers Plate",
+        cuisine: "WESTERN",
+        time: "Snack",
+        match: "85% MATCH",
+        timeEst: "5 mins",
+        cal: "310 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1631379578550-7038263db699?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Parmigiano-Reggiano Cheese", reqQty: 1 }, { name: "Crackers", reqQty: 1 }, { name: "Almonds", reqQty: 1 }],
+        instructions: ["Slice sharp cheddar and parmesan cheese into wedges.", "Arrange with seeded crackers, almonds, and grapes.", "Serve with honey."]
+      },
+      {
+        name: "Edamame & Sea Salt Bites",
+        cuisine: "JAPANESE",
+        time: "Snack",
+        match: "90% MATCH",
+        timeEst: "5 mins",
+        cal: "180 kcal",
+        isHomeRecipe: false,
+        img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+        ingredients: [{ name: "Edamame", reqQty: 1 }, { name: "Sea Salt", reqQty: 1 }],
+        instructions: ["Steam edamame pods in boiling salted water for 4 mins.", "Drain, toss with coarse flaky sea salt, and serve hot."]
+      }
+    ];
+
+    const recipeGenEngine = {
+      Breakfast: {
+        bases: ["Omelette", "Egg Hash", "Breakfast Tacos", "Avocado Toast", "Breakfast Burrito", "Waffles"],
+        proteins: ["Peameal Bacon", "Smoked Salmon", "Crispy Bacon", "Breakfast Sausage", "Poached Eggs"],
+        sauces: ["Pure Maple Syrup", "Hollandaise", "Spicy Chipotle Mayo", "Everything Bagel Seasoning"],
+        times: ["10 mins", "15 mins", "20 mins"],
+        cals: ["380 kcal", "420 kcal", "480 kcal", "520 kcal"]
+      },
+      Lunch: {
+        bases: ["Poutine Bowl", "Rice Bowl", "Wrap", "Sandwich", "Flatbread", "Burger Slider"],
+        proteins: ["Montreal Smoked Meat", "Grilled Chicken", "Smashed Beef", "Crispy Tofu", "Pulled Pork"],
+        sauces: ["Poutine Brown Gravy", "Garlic Aioli", "Maple Mustard", "Tzatziki", "Chipotle Ranch"],
+        times: ["15 mins", "20 mins", "25 mins"],
+        cals: ["490 kcal", "550 kcal", "620 kcal", "680 kcal"]
+      },
+      Dinner: {
+        bases: ["Tourtière Pie", "Skillet", "Risotto", "Pasta Bake", "Stir-Fry Bowl", "Roast Platter"],
+        proteins: ["Wild Pacific Salmon", "Ground Pork & Beef", "Ribeye Steak", "Chicken Thighs", "Jumbo Shrimp"],
+        sauces: ["Maple Dijon Glaze", "Tuscan Garlic Cream", "Bolognese Ragù", "Lemon Herb Butter"],
+        times: ["25 mins", "30 mins", "35 mins", "40 mins"],
+        cals: ["540 kcal", "590 kcal", "640 kcal", "720 kcal"]
+      },
+      Snack: {
+        bases: ["Tart Plate", "Dessert Bar", "Crisps Plate", "Dip Platter"],
+        proteins: ["Aged Cheddar", "Roasted Almonds", "Edamame", "Cheese Curds"],
+        sauces: ["Butter Tart Caramel", "Chocolate Ganache", "Garlic Hummus", "Sea Salt"],
+        times: ["5 mins", "10 mins"],
+        cals: ["180 kcal", "240 kcal", "290 kcal", "320 kcal"]
+      }
+    };
+
+    const ingredientClarificationMap = {
+      "chicken": ["Boneless Skinless Chicken Breasts (1 lb)", "Chicken Thighs (Bone-in, 1.5 lbs)", "Chicken Drumsticks (Pack of 6)", "Ground Chicken (1 lb)"],
+      "steak": ["Ribeye Steak (12 oz)", "New York Strip Steak (10 oz)", "Beef Tenderloin / Filet Mignon (8 oz)", "Flank Steak (1.5 lbs)"],
+      "beef": ["Lean Ground Beef 85/15 (1 lb)", "Extra Lean Ground Beef 90/10 (1 lb)", "Beef Stew Meat Chunks (1 lb)", "Beef Chuck Roast (3 lbs)"],
+      "bread": ["Artisan Sourdough Loaf", "Brioche Burger Buns (Pack of 4)", "Rye Bread Loaf", "Pita Flatbread (Pack of 6)"]
+    };
+
+    function generateDefault30DayCalendar() {
+      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const chefs = ["Sean", "Lorna", "Mitchell", "Lauren"];
+      const breakfasts = ["Peameal Bacon Breakfast Sandwich", "Sourdough Avocado Toast & Eggs", "Belgian Waffles & Pure Maple Syrup"];
+      const lunches = ["Montreal-Style Smoked Meat Sandwich", "Quebec Classic Curd Poutine", "Pub Burger & Fries"];
+      const dinners = ["French-Canadian Tourtière Meat Pie", "Wild Pacific Maple-Glazed Salmon", "Street Style Beef Tacos", "Creamy Garlic Mushroom Risotto"];
+      const snacks = ["Classic Canadian Butter Tarts", "Traditional Nanaimo Bars", "Mediterranean Hummus & Pita Crisp"];
+
+      let fullCal = [];
+      for (let i = 1; i <= 30; i++) {
+        fullCal.push({
+          dayNum: i,
+          dayName: days[(i - 1) % 7],
+          breakfast: breakfasts[i % breakfasts.length],
+          lunch: lunches[i % lunches.length],
+          dinner: dinners[i % dinners.length],
+          snack: snacks[i % snacks.length],
+          chef: chefs[(i - 1) % chefs.length],
+          vote: "YES",
+          notes: []
+        });
+      }
+      return fullCal;
+    }
+
+    let calendarSchedule = generateDefault30DayCalendar();
+    let commentsList = [
+      { author: "Lorna", text: "Can we do French-Canadian Tourtière on Tuesday?", time: "Yesterday at 6:30 PM" },
+      { author: "Sean", text: "Got ground beef and maple syrup ready in the pantry!", time: "Today at 10:15 AM" }
+    ];
+
+    let pantryData = [...defaultPantryData];
+    let shoppingList = [...defaultShoppingList];
+    let lastShoppingRaw = "";
+    let lastPantryRaw = "";
+
+    function parseNormalizedList(rawArray) {
+      if (!Array.isArray(rawArray)) return [];
+      return rawArray
+        .map(item => {
+          if (!item) return null;
+          if (typeof item === 'string') return { name: item, qty: 1, category: 'General', addedBy: 'Sean', note: '' };
+          const name = String(item.name || item.n || item.title || '').trim();
+          const qty = parseInt(item.qty || item.q || 1, 10) || 1;
+          const category = String(item.category || item.c || 'General');
+          const addedBy = String(item.addedBy || item.a || item.author || 'Sean');
+          const note = String(item.note || item.nt || '');
+          return { name, qty, category, addedBy, note };
+        })
+        .filter(item => item && item.name && item.name !== "undefined" && item.name !== "");
+    }
+
+    function checkPantryStock(ingredientName) {
+      if (!ingredientName || !Array.isArray(pantryData)) return null;
+      const target = String(ingredientName).toLowerCase();
+      return pantryData.find(p => {
+        if (!p) return false;
+        const pName = String(p.name || p.n || p.title || '').toLowerCase();
+        const pQty = Number(p.qty || p.q || 1);
+        return pName.includes(target) && pQty > 0;
+      });
+    }
+
+    function loadLocalCaches() {
+      try {
+        const s = localStorage.getItem(LOCAL_SHOP_KEY);
+        if (s) shoppingList = parseNormalizedList(JSON.parse(s));
+        const p = localStorage.getItem(LOCAL_PAN_KEY);
+        if (p) pantryData = parseNormalizedList(JSON.parse(p));
+        const c = localStorage.getItem(LOCAL_CAL_KEY);
+        if (c) calendarSchedule = JSON.parse(c);
+        const com = localStorage.getItem(LOCAL_COM_KEY);
+        if (com) commentsList = JSON.parse(com);
+        const savedUsers = localStorage.getItem(LOCAL_USERS_KEY);
+        if (savedUsers) userSettings = JSON.parse(savedUsers);
+        const savedAllergies = localStorage.getItem(LOCAL_ALLERGIES_KEY);
+        if (savedAllergies) masterAllergiesList = JSON.parse(savedAllergies);
+        const savedCuisines = localStorage.getItem(LOCAL_CUISINES_KEY);
+        if (savedCuisines) masterCuisinesList = JSON.parse(savedCuisines);
+
+        const custRecs = localStorage.getItem(LOCAL_CUST_RECIPES_KEY);
+        if (custRecs) {
+          const parsedCust = JSON.parse(custRecs);
+          parsedCust.forEach(cr => {
+            if (!mealsDatabase.some(m => m.name === cr.name)) {
+              mealsDatabase.unshift(cr);
+            }
+          });
+        }
+      } catch(e) {}
+    }
+
+    function saveLocalCaches() {
+      localStorage.setItem(LOCAL_SHOP_KEY, JSON.stringify(shoppingList));
+      localStorage.setItem(LOCAL_PAN_KEY, JSON.stringify(pantryData));
+      localStorage.setItem(LOCAL_CAL_KEY, JSON.stringify(calendarSchedule));
+      localStorage.setItem(LOCAL_COM_KEY, JSON.stringify(commentsList));
+      localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(userSettings));
+      localStorage.setItem(LOCAL_ALLERGIES_KEY, JSON.stringify(masterAllergiesList));
+      localStorage.setItem(LOCAL_CUISINES_KEY, JSON.stringify(masterCuisinesList));
+
+      const custOnly = mealsDatabase.filter(m => m.isHomeRecipe);
+      localStorage.setItem(LOCAL_CUST_RECIPES_KEY, JSON.stringify(custOnly));
+    }
+
+    function cycleNextOptions() {
+      categoryPageOffset += 3;
+      renderMealOptions();
+    }
+
+    function renderMealOptions() {
+      const grid = document.getElementById('mealOptionsGrid');
+      if(!grid) return;
+      grid.innerHTML = '';
+
+      let pool = mealsDatabase.filter(m => (m.time || '').toLowerCase() === activeMealTime.toLowerCase());
+      
+      if(activeCuisine !== 'All') {
+        const cuisineMatch = pool.filter(m => (m.cuisine || '').toLowerCase().includes(activeCuisine.toLowerCase()));
+        if(cuisineMatch.length > 0) pool = cuisineMatch;
+      }
+
+      if(pool.length === 0) {
+        pool = mealsDatabase.filter(m => (m.time || '').toLowerCase() === activeMealTime.toLowerCase());
+      }
+      if(pool.length === 0) {
+        pool = mealsDatabase;
+      }
+
+      const total = pool.length;
+      let selectedMeals = [];
+      for (let i = 0; i < 3; i++) {
+        selectedMeals.push(pool[(categoryPageOffset + i) % total]);
+      }
+
+      selectedMeals.forEach(meal => {
+        const userFavs = (userSettings[currentProfile] && userSettings[currentProfile].favorites) || [];
+        const isFav = userFavs.includes(meal.name);
+
+        let missingCount = 0;
+        let ingHTML = (meal.ingredients || []).map(ing => {
+          const inStockItem = checkPantryStock(ing.name);
+          const inStock = !!inStockItem;
+          if(!inStock) missingCount++;
+          return `
+            <span class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">
+              ${inStock ? '✓ ' + ing.name + ' (' + inStockItem.qty + ')' : '🛒 ' + ing.name + ' (Missing)'}
+            </span>
+          `;
+        }).join('');
+
+        const homeTag = meal.isHomeRecipe ? `<span class="badge-tag badge-home">🏠 HOME RECIPE</span>` : '';
+        const defaultImg = meal.img || "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=600&q=80";
+
+        grid.innerHTML += `
+          <div class="meal-card">
+            <img src="${defaultImg}" alt="${meal.name}" class="meal-card-img" onerror="this.src='https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=600&q=80'">
+            <div class="meal-card-body">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="badge-tag badge-cuisine">${meal.cuisine}</span>
+                  ${homeTag}
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span class="badge-tag badge-match" style="${missingCount > 0 ? 'background:#451a03; color:#fbbf24;' : ''}">${missingCount === 0 ? 'ALL IN PANTRY' : missingCount + ' MISSING'}</span>
+                  <button class="btn btn-sm" onclick="toggleStarDirect('${meal.name}')" style="background:transparent; padding:0 4px;">${isFav ? '⭐' : '☆'}</button>
+                </div>
+              </div>
+              <b style="font-size:0.95rem; display:block; margin-bottom:2px;">${meal.name}</b>
+              <div style="font-size:0.72rem; color:var(--text-muted); display:flex; gap:8px; align-items:center;">
+                <span>⏱️ ${meal.timeEst}</span>
+                <span class="badge-cal">🔥 ${meal.cal}</span>
+              </div>
+
+              <div style="margin-top:8px; font-size:0.72rem; font-weight:700; color:var(--text-muted);">Pantry Ingredient Check:</div>
+              <div class="ing-badges">${ingHTML}</div>
+
+              <button class="btn btn-purple btn-sm" style="width:100%; margin-top:8px; justify-content:center;" onclick="openInstructionsModalDirect('${meal.name}')">📖 Instructions & Recipe</button>
+
+              <div style="display:flex; gap:6px; margin-top:6px;">
+                <button class="btn btn-amber btn-sm" style="flex:1; justify-content:center;" onclick="cookMealDeductPantryDirect('${meal.name}')">🍳 Cook & Deduct</button>
+                <button class="btn btn-green btn-sm" style="flex:1; justify-content:center;" onclick="addMealIngredientsToShoppingDirect('${meal.name}')">+ Shopping List</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function setMealTime(time) {
+      activeMealTime = time;
+      categoryPageOffset = 0;
+      document.querySelectorAll('.meal-time-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-${time}`);
+      if(activeBtn) activeBtn.classList.add('active');
+      const label = document.getElementById('activeMealTimeLabel');
+      if(label) label.innerText = time;
+      renderMealOptions();
+    }
+
+    function filterCuisine(c) {
+      activeCuisine = c;
+      categoryPageOffset = 0;
+      document.querySelectorAll('#cuisineFilters .pill').forEach(p => {
+        p.classList.toggle('active', p.innerText.includes(c) || (c === 'All' && p.innerText.includes('All')));
+      });
+      renderMealOptions();
+    }
+
+    function switchTab(tabId) {
+      ['ideas', 'calendar', 'comments', 'favorites', 'pantry', 'shopping'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if(el) el.style.display = (t === tabId) ? 'block' : 'none';
+        
+        const dbtn = document.getElementById(`dtab-${t}`);
+        if(dbtn) dbtn.classList.toggle('active', t === tabId);
+
+        const mbtn = document.getElementById(`mtab-${t}`);
+        if(mbtn) mbtn.classList.toggle('active', t === tabId);
+      });
+      if(tabId === 'ideas') renderMealOptions();
+      if(tabId === 'favorites') renderFavorites();
+      if(tabId === 'calendar') renderCalendar();
+      if(tabId === 'comments') renderComments();
+      if(tabId === 'pantry') renderPantry();
+      if(tabId === 'shopping') renderShopping();
+    }
+
+    function openInstructionsModalDirect(mealName) {
+      const meal = mealsDatabase.find(m => m.name === mealName);
+      if(!meal) return;
+      openInstructionsModal(meal.name, meal.timeEst, meal.cal, meal.ingredients, meal.instructions);
+    }
+
+    function openInstructionsModal(mealName, timeEst, cal, ingredientsList, instructionsList) {
+      activeRecipeNameForAI = mealName;
+      document.getElementById('instModalTitle').innerText = `📖 ${mealName}`;
+      document.getElementById('instModalTime').innerText = `⏱️ ${timeEst || '25 mins'}`;
+      document.getElementById('instModalCal').innerText = `🔥 ${cal || '520 kcal Total'}`;
+      document.getElementById('aiRecipeQuestionInput').value = '';
+      document.getElementById('aiSousChefResponse').style.display = 'none';
+
+      const ingContainer = document.getElementById('instModalIngredients');
+      ingContainer.innerHTML = '';
+      (ingredientsList || []).forEach(ing => {
+        const name = typeof ing === 'string' ? ing : ing.name;
+        const inStockItem = checkPantryStock(name);
+        const inStock = !!inStockItem;
+        ingContainer.innerHTML += `
+          <span class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">
+            ${inStock ? '✓ ' + name + ' (' + inStockItem.qty + ' in stock)' : '🛒 ' + name + ' (Missing)'}
+          </span>
+        `;
+      });
+
+      const stepsContainer = document.getElementById('instModalSteps');
+      stepsContainer.innerHTML = '';
+      const defaultSteps = [
+        "Gather and prep all measured ingredients on a clean prep station.",
+        "Preheat cookware over medium-high heat with cooking oil or butter.",
+        "Sear proteins and aromatics, stirring to develop deep culinary flavors.",
+        "Combine sauces, simmer to reduce, garnish with fresh herbs, and serve hot."
+      ];
+      const stepsToRender = (instructionsList && instructionsList.length > 0) ? instructionsList : defaultSteps;
+
+      stepsToRender.forEach((stepText, idx) => {
+        stepsContainer.innerHTML += `
+          <div class="instruction-step">
+            <span class="instruction-num">Step ${idx + 1}:</span>
+            <span>${stepText}</span>
+          </div>
+        `;
+      });
+
+      document.getElementById('instructionsModal').style.display = 'flex';
+    }
+
+    function closeInstructionsModal() {
+      document.getElementById('instructionsModal').style.display = 'none';
+    }
+
+    function cookMealDeductPantryDirect(mealName) {
+      const meal = mealsDatabase.find(m => m.name === mealName);
+      if(!meal) return;
+
+      let deductedNames = [];
+      (meal.ingredients || []).forEach(ing => {
+        const itemIdx = pantryData.findIndex(p => p && p.name && p.name.toLowerCase().includes(ing.name.toLowerCase()));
+        if(itemIdx > -1 && pantryData[itemIdx].qty > 0) {
+          pantryData[itemIdx].qty -= 1;
+          deductedNames.push(pantryData[itemIdx].name);
+        }
+      });
+
+      renderPantry();
+      renderMealOptions();
+      pushHAPantry();
+
+      if(deductedNames.length > 0) {
+        alert(`Cooked "${mealName}"! Subtracted 1x of (${deductedNames.join(", ")}) from Pantry.`);
+      } else {
+        alert(`Cooked "${mealName}"! No matching items were found in Pantry to deduct.`);
+      }
+    }
+
+    function addMealIngredientsToShoppingDirect(mealName) {
+      let meal = mealsDatabase.find(m => m.name === mealName);
+      let requiredIngs = (meal && meal.ingredients) ? meal.ingredients : [
+        { name: mealName.split(" ")[0] || "Main Ingredient", reqQty: 1 },
+        { name: "Seasoning & Herbs", reqQty: 1 }
+      ];
+
+      let addedSummary = [];
+      requiredIngs.forEach(ing => {
+        const ingName = typeof ing === 'string' ? ing : ing.name;
+        const requiredQty = ing.reqQty || 1;
+        const pantryMatch = checkPantryStock(ingName);
+        const pantryQty = pantryMatch ? pantryMatch.qty : 0;
+
+        if (pantryQty >= requiredQty) return;
+
+        const neededQty = requiredQty - pantryQty;
+        const noteText = pantryQty > 0 
+          ? `Pantry has ${pantryQty}, need ${neededQty} more for ${mealName}` 
+          : `For ${mealName}`;
+
+        const existingShopIdx = shoppingList.findIndex(s => s && s.name && s.name.toLowerCase() === ingName.toLowerCase());
+        if (existingShopIdx > -1) {
+          shoppingList[existingShopIdx].qty += neededQty;
+          shoppingList[existingShopIdx].note = noteText;
+        } else {
+          shoppingList.push({
+            name: ingName,
+            qty: neededQty,
+            category: "Ingredients",
+            addedBy: currentProfile,
+            note: noteText
+          });
+        }
+        addedSummary.push(`${neededQty}x ${ingName}`);
+      });
+
+      renderShopping();
+      pushHAShopping();
+
+      if (addedSummary.length > 0) {
+        alert(`Calculated Pantry Stock for "${mealName}":\n\nAdded to Shopping List:\n• ${addedSummary.join("\n• ")}`);
+      } else {
+        alert(`Pantry Stock Check for "${mealName}":\n\nAll required ingredients are already fully stocked in your Pantry!`);
+      }
+    }
+
+    function toggleStarDirect(name) {
+      if (!userSettings[currentProfile]) userSettings[currentProfile] = { allergies: [], favorites: [] };
+      const favs = userSettings[currentProfile].favorites;
+      const idx = favs.indexOf(name);
+      if(idx > -1) favs.splice(idx, 1);
+      else favs.push(name);
+      saveLocalCaches();
+      renderMealOptions();
+      renderFavorites();
+    }
+
+    function triggerAIChef() {
+      const grid = document.getElementById('mealOptionsGrid');
+      grid.innerHTML = `<p style="color:var(--accent-amber); font-weight:600; padding:10px; font-size:0.85rem;">⚡ AI Chef is combining fresh ingredients for ${activeMealTime}...</p>`;
+      
+      setTimeout(() => {
+        const config = recipeGenEngine[activeMealTime] || recipeGenEngine.Dinner;
+        grid.innerHTML = '';
+
+        const aiDishImages = [
+          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+          "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
+          "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80"
+        ];
+
+        for (let i = 0; i < 3; i++) {
+          const protein = config.proteins[Math.floor(Math.random() * config.proteins.length)];
+          const base = config.bases[Math.floor(Math.random() * config.bases.length)];
+          const sauce = config.sauces[Math.floor(Math.random() * config.sauces.length)];
+          const timeEst = config.times[Math.floor(Math.random() * config.times.length)];
+          const cal = config.cals[Math.floor(Math.random() * config.cals.length)];
+          
+          const dishName = `${sauce} ${protein} ${base}`;
+          const cuisineTag = activeCuisine === 'All' ? 'CHEF CREATION' : activeCuisine.toUpperCase();
+          const ingredientsList = [{ name: protein, reqQty: 1 }, { name: base.split(' ')[0], reqQty: 1 }, { name: sauce, reqQty: 1 }];
+
+          let ingHTML = ingredientsList.map(ing => {
+            const inStockItem = checkPantryStock(ing.name);
+            const inStock = !!inStockItem;
+            return `
+              <span class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">
+                ${inStock ? '✓ ' + ing.name : '🛒 ' + ing.name + ' (Missing)'}
+              </span>
+            `;
+          }).join('');
+
+          grid.innerHTML += `
+            <div class="meal-card" style="border: 1px solid var(--accent-amber);">
+              <img src="${aiDishImages[i]}" alt="${dishName}" class="meal-card-img">
+              <div class="meal-card-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span class="badge-tag badge-cuisine">${cuisineTag}</span>
+                  <span class="badge-tag badge-match" style="background:#8b5cf6; color:#fff;">AI GENERATED</span>
+                </div>
+                <b style="font-size:0.95rem; display:block; margin-bottom:2px; color:#fff;">${dishName}</b>
+                <div style="font-size:0.72rem; color:var(--text-muted); display:flex; gap:8px; align-items:center;">
+                  <span>⏱️ ${timeEst}</span>
+                  <span class="badge-cal">🔥 ${cal}</span>
+                </div>
+
+                <div style="margin-top:8px; font-size:0.72rem; font-weight:700; color:var(--text-muted);">Pantry Check:</div>
+                <div class="ing-badges">${ingHTML}</div>
+
+                <button class="btn btn-purple btn-sm" style="margin-top:8px; width:100%; justify-content:center;" onclick="openInstructionsModal('${dishName}', '${timeEst}', '${cal}', [{name:'${protein}'},{name:'${base}'},{name:'${sauce}'}], null)">📖 Instructions & Recipe</button>
+                <button class="btn btn-green btn-sm" style="margin-top:4px; width:100%; justify-content:center;" onclick="addMealIngredientsToShoppingDirect('${dishName}')">+ Add Missing Ingredients</button>
+              </div>
+            </div>
+          `;
+        }
+      }, 300);
+    }
+
+    function triggerLuckyChoice() {
+      let filtered = mealsDatabase.filter(m => (m.time || '').toLowerCase() === activeMealTime.toLowerCase());
+      if(filtered.length === 0) filtered = mealsDatabase;
+      const pick = filtered[Math.floor(Math.random() * filtered.length)];
+      
+      const grid = document.getElementById('mealOptionsGrid');
+      const pickImg = pick.img || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80";
+      const homeTag = pick.isHomeRecipe ? `<span class="badge-tag badge-home">🏠 HOME RECIPE</span>` : '';
+
+      grid.innerHTML = `
+        <div class="meal-card" style="border: 2px solid var(--accent-amber);">
+          <img src="${pickImg}" alt="${pick.name}" class="meal-card-img">
+          <div class="meal-card-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <b style="font-size:0.95rem; color:var(--accent-amber);">🎲 Lucky Choice: ${pick.name}</b>
+              ${homeTag}
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px; display:flex; gap:8px; align-items:center;">
+              <span>${pick.time} • ${pick.cuisine} • ${pick.timeEst}</span>
+              <span class="badge-cal">🔥 ${pick.cal}</span>
+            </div>
+            
+            <button class="btn btn-purple btn-sm" style="margin-top:4px; width:100%; justify-content:center;" onclick="openInstructionsModalDirect('${pick.name}')">📖 Get Instructions & Recipe</button>
+            <button class="btn btn-green btn-sm" style="margin-top:4px; width:100%; justify-content:center;" onclick="addMealIngredientsToShoppingDirect('${pick.name}')">+ Add Missing Ingredients to Shopping List</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function setCalView(viewMode) {
+      activeCalView = viewMode;
+      document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`cview-${viewMode}`);
+      if(activeBtn) activeBtn.classList.add('active');
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const container = document.getElementById('calendarDisplayContainer');
+      if(!container) return;
+      container.innerHTML = '';
+
+      let itemsToDisplay = calendarSchedule;
+      if (activeCalView === 'weekly') itemsToDisplay = calendarSchedule.slice(0, 7);
+      if (activeCalView === 'daily') itemsToDisplay = calendarSchedule.slice(0, 1);
+
+      let gridClass = "calendar-grid-weekly";
+      if (activeCalView === 'monthly') gridClass = "calendar-grid-monthly";
+      if (activeCalView === 'daily') gridClass = "calendar-grid-daily";
+
+      let html = `<div class="${gridClass}">`;
+      itemsToDisplay.forEach((item, idx) => {
+        const voteBadge = item.vote === 'YES' 
+          ? `<span class="vote-badge-yes">👍 Approved</span>` 
+          : `<span class="vote-badge-no">👎 Rejected</span>`;
+
+        const notesCount = (item.notes || []).length;
+        const notesBadge = notesCount > 0 ? `<span style="font-size:0.62rem; color:var(--accent-amber); font-weight:bold;">💬 ${notesCount}</span>` : '';
+
+        html += `
+          <div class="cal-day-box" onclick="openCalDayModal(${idx})">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <b style="color:var(--accent-amber); font-size:0.82rem;">${item.dayName} #${item.dayNum || (idx+1)}</b>
+              <div style="display:flex; gap:4px; align-items:center;">
+                ${notesBadge}
+                ${voteBadge}
+              </div>
+            </div>
+            
+            <div class="cal-meal-line" style="margin-top:6px;">🌅 <b>B:</b> ${item.breakfast}</div>
+            <div class="cal-meal-line">☀️ <b>L:</b> ${item.lunch}</div>
+            <div class="cal-meal-line" style="color:#fff; font-weight:700;">🌙 <b>D:</b> ${item.dinner}</div>
+            <div class="cal-meal-line">🥨 <b>S:</b> ${item.snack || 'Hummus & Pita'}</div>
+            <div style="font-size:0.68rem; color:#a5b4fc; margin-top:4px; font-weight:700;">👨‍🍳 ${item.chef}</div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function openCalDayModal(idx) {
+      activeCalDayIndex = idx;
+      const item = calendarSchedule[idx];
+
+      document.getElementById('calModalDayTitle').innerText = `📅 ${item.dayName} #${item.dayNum || (idx+1)} Plan`;
+      document.getElementById('calModalChefSelect').value = item.chef;
+      document.getElementById('calModalBreakfastInput').value = item.breakfast;
+      document.getElementById('calModalLunchInput').value = item.lunch;
+      document.getElementById('calModalDinnerInput').value = item.dinner;
+      document.getElementById('calModalSnackInput').value = item.snack || 'Hummus & Pita';
+
+      renderCalModalComments(item);
+
+      document.getElementById('calModalReminderBtn').onclick = function() {
+        downloadChefReminderICS(item.dayName, item.dinner, item.chef);
+      };
+
+      document.getElementById('calDayModal').style.display = 'flex';
+    }
+
+    function renderCalModalComments(item) {
+      const display = document.getElementById('calModalCommentsDisplay');
+      if (!display) return;
+      const notes = item.notes || [];
+      if (notes.length === 0) {
+        display.innerHTML = '<i>No notes added for this day yet.</i>';
+        return;
+      }
+      display.innerHTML = notes.map(n => `
+        <div style="margin-bottom:4px;">
+          <b style="color:#a5b4fc;">${n.author}:</b> <span>${n.text}</span> <span style="font-size:0.62rem; color:var(--text-muted); font-weight:normal;">(${n.time})</span>
+        </div>
+      `).join('');
+    }
+
+    function addCalDayComment() {
+      if (activeCalDayIndex === null) return;
+      const input = document.getElementById('calModalCommentInput');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+      const item = calendarSchedule[activeCalDayIndex];
+      if (!item.notes) item.notes = [];
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      item.notes.push({ author: currentProfile, text: text, time: timeStr });
+      if (input) input.value = '';
+      saveLocalCaches();
+      renderCalModalComments(item);
+      renderCalendar();
+    }
+
+    async function sendMobilePushReminder() {
+      if (activeCalDayIndex === null) return;
+      const item = calendarSchedule[activeCalDayIndex];
+      const chefName = item.chef;
+      
+      const exactDeviceTarget = haNotifyDeviceMap[chefName] || "mobile_app_pixel_10_pro_fold";
+      const messageText = `Dinner Duty Alert: You are cooking ${item.dinner} on ${item.dayName}!`;
+      const titleText = `👨‍🍳 MealFlow Reminder for ${chefName}`;
+
+      try {
+        const response = await fetch(`/api/services/notify/${exactDeviceTarget}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(haToken ? { "Authorization": `Bearer ${haToken}` } : {})
+          },
+          body: JSON.stringify({
+            title: titleText,
+            message: messageText
+          })
+        });
+
+        if (response.ok) {
+          alert(`✅ HA Push Sent to ${chefName}'s Device!\n\nTarget Service: notify.${exactDeviceTarget}\nMessage: "${messageText}"`);
+        } else {
+          alert(`⚠️ Sent Push Attempt to notify.${exactDeviceTarget}.\nResponse Status: ${response.status}.`);
+        }
+      } catch (e) {
+        alert(`📱 Push Call Error: ${e.message}`);
+      }
+    }
+
+    function closeCalDayModal() {
+      document.getElementById('calDayModal').style.display = 'none';
+      renderCalendar();
+    }
+
+    function saveCalModalChef(val) {
+      if (activeCalDayIndex !== null) {
+        calendarSchedule[activeCalDayIndex].chef = val;
+        saveLocalCaches();
+      }
+    }
+
+    function saveCalModalMeal(mealType, val) {
+      if (activeCalDayIndex !== null) {
+        calendarSchedule[activeCalDayIndex][mealType] = val;
+        saveLocalCaches();
+      }
+    }
+
+    function voteCalDinner(voteVal) {
+      if (activeCalDayIndex !== null) {
+        calendarSchedule[activeCalDayIndex].vote = voteVal;
+        saveLocalCaches();
+        if (voteVal === 'NO') {
+          alert(`Vote cast: 👎 REJECTED by ${currentProfile}.\n\nTip: Click "⚡ AI Chef Generator" on the main tab to pick an alternative meal!`);
+        } else {
+          alert(`Vote cast: 👍 APPROVED by ${currentProfile}!`);
+        }
+        closeCalDayModal();
+      }
+    }
+
+    function downloadChefReminderICS(day, meal, chef) {
+      const icsData = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//MealFlow Stu Planner//EN
+BEGIN:VEVENT
+SUMMARY:👨‍🍳 Dinner Duty: ${meal} (${chef})
+DESCRIPTION:You are cooking ${meal} tonight for the family!
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Reminder: You are cooking ${meal} tomorrow!
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT4H
+ACTION:DISPLAY
+DESCRIPTION:Reminder: You are cooking ${meal} in 4 hours!
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute('download', `${day}_Chef_Reminder_${chef}.ics`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function openCookbookModal() {
+      renderCookbookPreview();
+      document.getElementById('cookbookModal').style.display = 'flex';
+    }
+
+    function closeCookbookModal() {
+      document.getElementById('cookbookModal').style.display = 'none';
+    }
+
+    function renderCookbookPreview() {
+      const container = document.getElementById('cookbookPreviewContainer');
+      if (!container) return;
+
+      const title = document.getElementById('cbTitle').value;
+      const subtitle = document.getElementById('cbSubtitle').value;
+      const dedication = document.getElementById('cbDedication').value;
+      const coverImg = document.getElementById('cbCoverImg').value;
+
+      const starredMeals = mealsDatabase.filter(m => {
+        const userFavs = (userSettings[currentProfile] && userSettings[currentProfile].favorites) || [];
+        return userFavs.includes(m.name) || m.isHomeRecipe;
+      });
+
+      const displayList = starredMeals.length > 0 ? starredMeals : mealsDatabase.slice(0, 4);
+
+      let html = `
+        <div style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+          <img src="${coverImg}" class="cookbook-cover-preview" alt="Cookbook Cover">
+          <h2 style="color:var(--accent-amber); font-size:1.2rem; text-align:center;">${title}</h2>
+          <p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-bottom:8px;">${subtitle}</p>
+          <div style="background:#1e293b; border-left:3px solid var(--accent-purple); padding:8px 12px; font-size:0.75rem; color:#fff; margin-bottom:14px; font-style:italic;">
+            "${dedication}"
+          </div>
+      `;
+
+      displayList.forEach(m => {
+        html += `
+          <div class="cookbook-recipe-entry">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <b style="color:#fff; font-size:0.95rem;">📖 ${m.name}</b>
+              <span class="badge-tag badge-cuisine">${m.cuisine}</span>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:6px;">⏱️ ${m.timeEst} • 🔥 ${m.cal}</div>
+            <div style="font-size:0.75rem; color:#38bdf8; margin-bottom:4px;"><b>Ingredients:</b> ${(m.ingredients || []).map(i => i.name).join(', ')}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);"><b>Method:</b> ${(m.instructions || []).join(' ')}</div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function printCookbookPDF() {
+      renderCookbookPreview();
+      const content = document.getElementById('cookbookPreviewContainer').innerHTML;
+      const printWin = window.open('', '', 'width=800,height=900');
+      printWin.document.write(`
+        <html>
+          <head>
+            <title>Family Gift Cookbook</title>
+            <style>
+              body { font-family: sans-serif; padding: 20px; color: #111; line-height: 1.5; }
+              img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; }
+              .cookbook-recipe-entry { border-bottom: 1px solid #ccc; padding-bottom: 14px; margin-bottom: 14px; }
+              .badge-tag { font-size: 0.7rem; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            ${content}
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => { printWin.print(); }, 500);
+    }
+
+    function copyShoppingListText() {
+      if (shoppingList.length === 0) {
+        alert('Shopping list is currently empty!');
+        return;
+      }
+      const textList = shoppingList.map(item => `• ${item.qty}x ${item.name} ${item.note ? '(' + item.note + ')' : ''}`).join('\n');
+      navigator.clipboard.writeText(textList);
+      alert("📋 Copied Shopping List to Clipboard:\n\n" + textList);
+    }
+
+    function openQuickShoppingModal() {
+      document.getElementById('quickItemName').value = '';
+      document.getElementById('quickShoppingModal').style.display = 'flex';
+    }
+
+    function closeQuickShoppingModal() {
+      document.getElementById('quickShoppingModal').style.display = 'none';
+    }
+
+    function handleQuickShopKey(e) {
+      if (e.key === 'Enter') submitQuickShopItem();
+    }
+
+    function submitQuickShopItem() {
+      const input = document.getElementById('quickItemName');
+      const name = input ? input.value.trim() : '';
+      if (!name) return;
+      closeQuickShoppingModal();
+      promptSmartAddItemDirect(name);
+    }
+
+    function promptSmartAddItemDirect(rawName) {
+      const lower = rawName.trim().toLowerCase();
+      let matchedCategory = null;
+
+      for (const key in ingredientClarificationMap) {
+        if (lower.includes(key)) {
+          matchedCategory = key;
+          break;
+        }
+      }
+
+      if (matchedCategory) {
+        const options = ingredientClarificationMap[matchedCategory];
+        let promptMsg = `"${rawName}" is broad! Choose a specific type:\n\n`;
+        options.forEach((opt, idx) => {
+          promptMsg += `${idx + 1}. ${opt}\n`;
+        });
+        promptMsg += `${options.length + 1}. Keep as "${rawName.trim()}"\n\nEnter number:`;
+
+        const choice = prompt(promptMsg, "1");
+        const choiceNum = parseInt(choice, 10);
+
+        let finalName = rawName.trim();
+        if (choiceNum >= 1 && choiceNum <= options.length) {
+          finalName = options[choiceNum - 1];
+        }
+
+        addItemToTarget('shopping', finalName);
+      } else {
+        addItemToTarget('shopping', rawName.trim());
+      }
+    }
+
+    function promptSmartAddItem(targetType) {
+      const rawName = prompt(`Enter item name to add to ${targetType === 'pantry' ? 'Pantry' : 'Shopping List'}:`);
+      if (!rawName || !rawName.trim()) return;
+
+      const lower = rawName.trim().toLowerCase();
+      let matchedCategory = null;
+
+      for (const key in ingredientClarificationMap) {
+        if (lower.includes(key)) {
+          matchedCategory = key;
+          break;
+        }
+      }
+
+      if (matchedCategory) {
+        const options = ingredientClarificationMap[matchedCategory];
+        let promptMsg = `"${rawName}" is broad! Choose a specific type:\n\n`;
+        options.forEach((opt, idx) => {
+          promptMsg += `${idx + 1}. ${opt}\n`;
+        });
+        promptMsg += `${options.length + 1}. Keep as "${rawName.trim()}"\n\nEnter number:`;
+
+        const choice = prompt(promptMsg, "1");
+        const choiceNum = parseInt(choice, 10);
+
+        let finalName = rawName.trim();
+        if (choiceNum >= 1 && choiceNum <= options.length) {
+          finalName = options[choiceNum - 1];
+        }
+
+        addItemToTarget(targetType, finalName);
+      } else {
+        addItemToTarget(targetType, rawName.trim());
+      }
+    }
+
+    function addItemToTarget(targetType, itemName) {
+      if (targetType === 'pantry') {
+        pantryData.push({ name: itemName, qty: 1, category: "General", addedBy: currentProfile });
+        saveLocalCaches();
+        renderPantry();
+        pushHAPantry();
+      } else {
+        shoppingList.push({ name: itemName, qty: 1, category: "General", addedBy: currentProfile, note: "Specific Add" });
+        saveLocalCaches();
+        renderShopping();
+        pushHAShopping();
+      }
+    }
+
+    function openCustomRecipeModal() {
+      document.getElementById('customRecipeModal').style.display = 'flex';
+    }
+
+    function closeCustomRecipeModal() {
+      document.getElementById('customRecipeModal').style.display = 'none';
+    }
+
+    function saveCustomRecipe() {
+      const title = document.getElementById('custTitle').value.trim();
+      const time = document.getElementById('custTime').value;
+      const cuisine = document.getElementById('custCuisine').value;
+      const timeEst = document.getElementById('custTimeEst').value.trim() || '30 mins';
+      const cal = document.getElementById('custCal').value.trim() || '550 kcal';
+      const ingRaw = document.getElementById('custIngredients').value.trim();
+      const instRaw = document.getElementById('custInstructions').value.trim();
+
+      if (!title) {
+        alert('Please enter a recipe title!');
+        return;
+      }
+
+      const ingArray = ingRaw ? ingRaw.split(',').map(s => ({ name: s.trim(), reqQty: 1 })) : [{ name: 'Fresh Ingredients', reqQty: 1 }];
+      const instArray = instRaw ? instRaw.split('\n').map(s => s.trim()).filter(s => s.length > 0) : ['Prep ingredients and cook over medium heat until ready.'];
+      const defaultHomeImg = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80";
+
+      const newRecipe = {
+        name: title,
+        cuisine: cuisine,
+        time: time,
+        match: '100% HOME',
+        timeEst: timeEst,
+        cal: cal,
+        isHomeRecipe: true,
+        img: defaultHomeImg,
+        ingredients: ingArray,
+        instructions: instArray
+      };
+
+      mealsDatabase.unshift(newRecipe);
+      saveLocalCaches();
+      closeCustomRecipeModal();
+      renderMealOptions();
+      alert(`Saved "${title}" as a Home Recipe! Active in rotations.`);
+    }
+
+    function clearRecipeSearch() { 
+      const box = document.getElementById('recipeResultContainer');
+      if (box) box.style.display = 'none'; 
+    }
+
+    function openSettings() { 
+      openSettingsSub('main');
+      document.getElementById('settingsModal').style.display = 'flex'; 
+    }
+
+    function closeSettings() { 
+      document.getElementById('settingsModal').style.display = 'none'; 
+    }
+
+    function resetDemoData() {
+      shoppingList = parseNormalizedList(defaultShoppingList);
+      pantryData = parseNormalizedList(defaultPantryData);
+      calendarSchedule = generateDefault30DayCalendar();
+      renderPantry();
+      renderShopping();
+      renderCalendar();
+      pushHAShopping();
+      pushHAPantry();
+      closeSettings();
+    }
+
+    function clearPantryData() {
+      pantryData = [];
+      renderPantry();
+      pushHAPantry();
+      closeSettings();
+    }
+
+    function renderShopping() {
+      const grid = document.getElementById('shoppingListGrid');
+      if(!grid) return;
+      grid.innerHTML = '';
+      shoppingList.forEach((item, idx) => {
+        const noteBadge = item.note ? `<span class="badge-tag badge-note">${item.note}</span>` : '';
+        grid.innerHTML += `
+          <div class="list-item-row">
+            <div class="list-item-title">
+              <span>${item.name}</span>
+              <span class="badge-tag badge-author">by ${item.addedBy || 'Sean'}</span>
+              ${noteBadge}
+            </div>
+            <div class="list-item-controls">
+              <div class="qty-control">
+                <button class="qty-btn" onclick="updateShoppingQty(${idx}, -1)">-</button>
+                <span style="font-size:0.8rem;">${item.qty} Needed</span>
+                <button class="qty-btn" onclick="updateShoppingQty(${idx}, 1)">+</button>
+              </div>
+              <button class="btn btn-red btn-sm" onclick="removeShopping(${idx})">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function updateShoppingQty(idx, delta) {
+      shoppingList[idx].qty += delta;
+      if(shoppingList[idx].qty <= 0) shoppingList.splice(idx, 1);
+      renderShopping();
+      pushHAShopping();
+    }
+
+    function removeShopping(idx) {
+      shoppingList.splice(idx, 1);
+      renderShopping();
+      pushHAShopping();
+    }
+
+    function renderPantry() {
+      const container = document.getElementById('pantryList');
+      if(!container) return;
+      container.innerHTML = '';
+      pantryData.forEach((item, idx) => {
+        container.innerHTML += `
+          <div class="list-item-row">
+            <div class="list-item-title">
+              <span>${item.name}</span>
+              <span style="font-size:0.72rem; color:var(--text-muted); font-weight:normal;">(${item.category})</span>
+              <span class="badge-tag badge-author">by ${item.addedBy || 'Sean'}</span>
+            </div>
+            <div class="list-item-controls">
+              <div class="qty-control">
+                <button class="qty-btn" onclick="updatePantryQty(${idx}, -1)">-</button>
+                <span style="font-size:0.8rem;">${item.qty}</span>
+                <button class="qty-btn" onclick="updatePantryQty(${idx}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function updatePantryQty(idx, delta) {
+      pantryData[idx].qty = Math.max(0, pantryData[idx].qty + delta);
+      renderPantry();
+      renderMealOptions();
+      pushHAPantry();
+    }
+
+    function renderComments() {
+      const list = document.getElementById('commentsList');
+      if(!list) return;
+      list.innerHTML = '';
+      commentsList.forEach(c => {
+        list.innerHTML += `
+          <div class="list-item-row">
+            <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span class="badge-tag badge-author">👤 ${c.author}</span>
+                <span style="font-size:0.68rem; color:var(--text-muted); font-weight:normal;">(${c.time})</span>
+              </div>
+              <p style="font-size:0.85rem; color:#fff;">${c.text}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function handleCommentKey(e) { if(e.key === 'Enter') postComment(); }
+
+    function postComment() {
+      const input = document.getElementById('newCommentInput');
+      const text = input ? input.value.trim() : '';
+      if(!text) return;
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      commentsList.unshift({ author: currentProfile, text: text, time: `Today at ${timeStr}` });
+      if (input) input.value = '';
+      saveLocalCaches();
+      renderComments();
+    }
+
+    function handleAIQuestionKey(e) { if (e.key === 'Enter') askAISousChef(); }
+
+    function askAISousChef() {
+      const input = document.getElementById('aiRecipeQuestionInput');
+      const q = input ? input.value.trim() : '';
+      if (!q) return;
+
+      const respBox = document.getElementById('aiSousChefResponse');
+      respBox.style.display = 'block';
+      respBox.innerHTML = `<i>Thinking about ${activeRecipeNameForAI}...</i>`;
+
+      setTimeout(() => {
+        let answer = `For ${activeRecipeNameForAI}: Keep skillet heat at a steady medium-high, season generously, and let meats rest 3-5 mins before plating for best results!`;
+        respBox.innerHTML = `<b>🤖 Chef Answer:</b> ${answer}`;
+      }, 500);
+    }
+
+    function startVoiceRecognition() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Voice recognition not supported in this browser.');
+        return;
+      }
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      const input = document.getElementById('aiRecipeQuestionInput');
+      input.placeholder = "Listening...";
+      recognition.onresult = function(event) {
+        input.value = event.results[0][0].transcript;
+        askAISousChef();
+      };
+      recognition.start();
+    }
+
+    function openSearchModal() {
+      document.getElementById('modalRecipeQuery').value = '';
+      document.getElementById('searchModal').style.display = 'flex';
+    }
+
+    function closeSearchModal() {
+      document.getElementById('searchModal').style.display = 'none';
+    }
+
+    function handleModalSearchKey(e) {
+      if (e.key === 'Enter') executeModalSearch();
+    }
+
+    function executeModalSearch() {
+      const query = document.getElementById('modalRecipeQuery').value.trim();
+      if(!query) return;
+      closeSearchModal();
+      
+      const container = document.getElementById('recipeResultContainer');
+      const content = document.getElementById('recipeResultContent');
+      const searchImg = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
+
+      container.style.display = 'block';
+      content.innerHTML = `
+        <div class="meal-card" style="border:1px solid var(--accent-purple);">
+          <img src="${searchImg}" alt="${query}" class="meal-card-img">
+          <div class="meal-card-body">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <b style="font-size:0.95rem; color:#fff;">${query}</b>
+              <span class="badge-tag badge-cuisine">EXTERNAL RECIPE</span>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">⏱️ 30 mins • 🔥 ~480 kcal</p>
+            <p style="font-size:0.75rem; margin-top:6px;"><b>Instructions:</b> Combine fresh ingredients, prepare cooking surface, season generously, cook for 20 mins, serve warm.</p>
+            <button class="btn btn-purple btn-sm" style="margin-top:8px; width:100%; justify-content:center;" onclick="openInstructionsModal('${query}', '30 mins', '~480 kcal', ['Fresh Ingredients'], null)">📖 Get Instructions & Recipe</button>
+            <button class="btn btn-green btn-sm" style="margin-top:4px; width:100%; justify-content:center;" onclick="addMealIngredientsToShoppingDirect('${query}')">+ Add Missing Ingredients to Shopping List</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function completeRegistration() {
+      const input = document.getElementById('regUserNameInput');
+      const name = input ? input.value.trim() : '';
+      if (!name) {
+        alert('Please enter a user name or ID to continue.');
+        return;
+      }
+      userSettings[name] = { allergies: [], favorites: [] };
+      currentProfile = name;
+      saveLocalCaches();
+      renderUserSelectDropdown();
+      renderProfilesManagerList();
+      changeProfile(name);
+      document.getElementById('registerModal').style.display = 'none';
+    }
+
+    function renderUserSelectDropdown() {
+      const chefSelect = document.getElementById("calModalChefSelect");
+      const settingsSelect = document.getElementById("settingsUserSelect");
+      const users = Object.keys(userSettings);
+
+      if (settingsSelect) {
+        settingsSelect.innerHTML = users.map(u => `<option value="${u}" ${u === currentProfile ? 'selected' : ''}>👤 ${u}</option>`).join('');
+      }
+      if (chefSelect) {
+        chefSelect.innerHTML = users.map(u => `<option value="${u}">👤 ${u}</option>`).join('');
+      }
+    }
+
+    function renderProfilesManagerList() {
+      const container = document.getElementById("settingsProfilesList");
+      if (!container) return;
+      const users = Object.keys(userSettings);
+
+      container.innerHTML = users.map(u => `
+        <span style="background:#1e293b; border:1px solid ${u === currentProfile ? 'var(--accent-amber)' : 'var(--border-color)'}; padding:4px 10px; border-radius:14px; font-size:0.78rem; display:inline-flex; align-items:center; gap:8px;">
+          <b style="color:#fff; cursor:pointer;" onclick="changeProfile('${u}')">${u === currentProfile ? '★ ' : ''}👤 ${u}</b>
+          ${users.length > 1 ? `<button onclick="deleteHouseholdUser('${u}')" style="background:transparent; border:none; color:#fca5a5; cursor:pointer; font-weight:bold; font-size:0.85rem;" title="Delete User">✕</button>` : ''}
+        </span>
+      `).join('');
+    }
+
+    function changeProfile(val) {
+      currentProfile = val;
+      const badge = document.getElementById('activeUserBadge');
+      if (badge) badge.innerText = `👤 ${val}`;
+      renderUserSelectDropdown();
+      renderProfilesManagerList();
+      syncAllergyCheckboxes();
+      renderMealOptions();
+      renderFavorites();
+      
+      const toast = document.getElementById('toastNotification');
+      if (toast) {
+        toast.innerText = `Switched Active User: ${val}`;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+      }
+    }
+
+    function addNewHouseholdUser() {
+      const input = document.getElementById('newUserNameInput');
+      const name = input ? input.value.trim() : '';
+      if (!name) return;
+
+      if (!userSettings[name]) {
+        userSettings[name] = { allergies: [], favorites: [] };
+        saveLocalCaches();
+        renderUserSelectDropdown();
+        renderProfilesManagerList();
+        changeProfile(name);
+        if (input) input.value = '';
+        alert(`Added and switched to new household profile: ${name}!`);
+      } else {
+        alert(`Profile for ${name} already exists!`);
+      }
+    }
+
+    function deleteHouseholdUser(userName) {
+      const users = Object.keys(userSettings);
+      if (users.length <= 1) {
+        alert('You must have at least one active user profile in the system.');
+        return;
+      }
+      if (!confirm(`Are you sure you want to delete profile "${userName}"?`)) return;
+
+      delete userSettings[userName];
+      if (currentProfile === userName) {
+        currentProfile = Object.keys(userSettings)[0];
+      }
+
+      saveLocalCaches();
+      renderUserSelectDropdown();
+      renderProfilesManagerList();
+      changeProfile(currentProfile);
+    }
+
+    function syncAllergyCheckboxes() {
+      const userAllergies = (userSettings[currentProfile] && userSettings[currentProfile].allergies) || [];
+      const listContainer = document.getElementById("settingsAllergiesCheckboxList");
+      
+      if (listContainer) {
+        listContainer.innerHTML = masterAllergiesList.map(alg => `
+          <label><input type="checkbox" onchange="toggleAllergy('${alg}')" ${userAllergies.includes(alg) ? 'checked' : ''}> ${alg}</label>
+        `).join('');
+      }
+
+      const settingsUserEl = document.getElementById('settingsUser');
+      if (settingsUserEl) settingsUserEl.innerText = currentProfile;
+      const favProfileEl = document.getElementById('favProfileName');
+      if (favProfileEl) favProfileEl.innerText = currentProfile;
+    }
+
+    function toggleAllergy(alg) {
+      if (!userSettings[currentProfile]) userSettings[currentProfile] = { allergies: [], favorites: [] };
+      const userAllergies = userSettings[currentProfile].allergies;
+      const idx = userAllergies.indexOf(alg);
+      if(idx > -1) userAllergies.splice(idx, 1);
+      else userAllergies.push(alg);
+      saveLocalCaches();
+      syncAllergyCheckboxes();
+      renderMealOptions();
+    }
+
+    function addCustomAllergy() {
+      const input = document.getElementById('customAllergyInput');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      if (!masterAllergiesList.includes(text)) {
+        masterAllergiesList.push(text);
+      }
+      toggleAllergy(text);
+      if (input) input.value = '';
+      saveLocalCaches();
+      syncAllergyCheckboxes();
+      renderMealOptions();
+    }
+
+    function saveHAToken() {
+      const input = document.getElementById("haTokenInput");
+      haToken = input ? input.value.trim() : '';
+      localStorage.setItem(TOKEN_KEY, haToken);
+      fetchHAData();
+      openSettingsSub('main');
+      alert("HA Token saved successfully!");
+    }
+
+    function logSyncEvent(type, status) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      syncEventLogs.unshift(`[${timeStr}] ${type}: ${status}`);
+      if (syncEventLogs.length > 10) syncEventLogs.pop();
+      renderSyncLogs();
+    }
+
+    function renderSyncLogs() {
+      const el = document.getElementById("haSyncLogsList");
+      if (!el) return;
+      if (syncEventLogs.length === 0) {
+        el.innerHTML = '<span style="color:var(--text-muted);">No sync events recorded yet.</span>';
+        return;
+      }
+      el.innerHTML = syncEventLogs.map(log => `<div>${log}</div>`).join('');
+    }
+
+    async function fetchHAData() {
+      try {
+        const headers = haToken ? { "Authorization": `Bearer ${haToken}` } : {};
+        
+        const resShop = await fetch(`/api/states/${ENTITY_SHOPPING}`, { headers });
+        if (resShop.ok) {
+          const dShop = await resShop.json();
+          if (dShop.state && dShop.state !== "unknown" && dShop.state !== "unavailable" && dShop.state.length > 2) {
+            if (dShop.state !== lastShoppingRaw) {
+              lastShoppingRaw = dShop.state;
+              shoppingList = parseNormalizedList(JSON.parse(dShop.state));
+              saveLocalCaches();
+              renderShopping();
+              logSyncEvent("Shopping Fetch", "SUCCESS (Remote Updated)");
+            }
+          }
+        }
+
+        const resPan = await fetch(`/api/states/${ENTITY_PANTRY}`, { headers });
+        if (resPan.ok) {
+          const dPan = await resPan.json();
+          if (dPan.state && dPan.state !== "unknown" && dPan.state !== "unavailable" && dPan.state.length > 2) {
+            if (dPan.state !== lastPantryRaw) {
+              lastPantryRaw = dPan.state;
+              pantryData = parseNormalizedList(JSON.parse(dPan.state));
+              saveLocalCaches();
+              renderPantry();
+              renderMealOptions();
+              logSyncEvent("Pantry Fetch", "SUCCESS (Remote Updated)");
+            }
+          }
+        }
+
+        logSyncEvent("HA Polling", "Connected OK");
+      } catch (e) {
+        logSyncEvent("HA Polling", "Offline / Local Mode");
+      }
+    }
+
+    async function pushHAShopping() {
+      saveLocalCaches();
+      const compactList = shoppingList.map(i => ({ n: i.name, q: i.qty, a: i.addedBy || currentProfile, nt: i.note || "" }));
+      const str = JSON.stringify(compactList);
+      lastShoppingRaw = str;
+
+      try {
+        await fetch(`/api/services/input_text/set_value`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(haToken ? { "Authorization": `Bearer ${haToken}` } : {})
+          },
+          body: JSON.stringify({
+            entity_id: ENTITY_SHOPPING,
+            value: str.substring(0, 255)
+          })
+        });
+        logSyncEvent("Shopping Push", "SUCCESS (Written to HA)");
+      } catch (e) {
+        logSyncEvent("Shopping Push", "Saved Locally");
+      }
+    }
+
+    async function pushHAPantry() {
+      saveLocalCaches();
+      const compactList = pantryData.map(i => ({ n: i.name, q: i.qty, c: i.category, a: i.addedBy || currentProfile }));
+      const str = JSON.stringify(compactList);
+      lastPantryRaw = str;
+
+      try {
+        await fetch(`/api/services/input_text/set_value`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(haToken ? { "Authorization": `Bearer ${haToken}` } : {})
+          },
+          body: JSON.stringify({
+            entity_id: ENTITY_PANTRY,
+            value: str.substring(0, 255)
+          })
+        });
+        logSyncEvent("Pantry Push", "SUCCESS (Written to HA)");
+      } catch (e) {
+        logSyncEvent("Pantry Push", "Saved Locally");
+      }
+    }
+
+    function openSettingsSub(viewName) {
+      ['main', 'profiles', 'cuisines', 'ha', 'data'].forEach(v => {
+        const el = document.getElementById(`settingsView${v.charAt(0).toUpperCase() + v.slice(1)}`);
+        if (el) el.style.display = (v === viewName) ? 'block' : 'none';
+      });
+      if (viewName === 'profiles') {
+        renderProfilesManagerList();
+        syncAllergyCheckboxes();
+      }
+      if (viewName === 'ha') renderSyncLogs();
+      if (viewName === 'cuisines') renderCuisinePickers();
+    }
+
+    function openCuisinePickerModal() {
+      renderCuisinePickers();
+      document.getElementById("cuisinePickerModal").style.display = "flex";
+    }
+
+    function closeCuisinePickerModal() {
+      document.getElementById("cuisinePickerModal").style.display = "none";
+    }
+
+    function renderCuisinePickers() {
+      const modalGrid = document.getElementById("modalCuisineGrid");
+      const settingsList = document.getElementById("settingsCuisineTagsList");
+
+      if (modalGrid) {
+        modalGrid.innerHTML = `<div class="pill ${activeCuisine === 'All' ? 'active' : ''}" onclick="filterCuisine('All'); closeCuisinePickerModal();">🍽️ All Cuisines</div>`;
+        masterCuisinesList.forEach(c => {
+          const flag = (c === 'Canada') ? '🍁 ' : '';
+          modalGrid.innerHTML += `
+            <div class="pill ${activeCuisine.toLowerCase() === c.toLowerCase() ? 'active' : ''}" onclick="filterCuisine('${c}'); closeCuisinePickerModal();">
+              ${flag}${c}
+            </div>
+          `;
+        });
+      }
+
+      if (settingsList) {
+        settingsList.innerHTML = masterCuisinesList.map((c, idx) => `
+          <span style="background:#1e293b; border:1px solid #334155; padding:4px 8px; border-radius:6px; font-size:0.75rem; display:inline-flex; align-items:center; gap:6px;">
+            ${(c === 'Canada' ? '🍁 ' : '') + c} <button onclick="deleteCuisine(${idx})" style="background:transparent; border:none; color:#fca5a5; cursor:pointer; font-weight:bold;">✕</button>
+          </span>
+        `).join('');
+      }
+    }
+
+    function addCustomCuisine() {
+      const input = document.getElementById("newCuisineInput");
+      const val = input ? input.value.trim() : '';
+      if (!val) return;
+      if (!masterCuisinesList.includes(val)) {
+        masterCuisinesList.push(val);
+        saveLocalCaches();
+        renderCuisinePickers();
+        if (input) input.value = '';
+        alert(`Added "${val}" to World Cuisines list!`);
+      }
+    }
+
+    function deleteCuisine(idx) {
+      masterCuisinesList.splice(idx, 1);
+      saveLocalCaches();
+      renderCuisinePickers();
+    }
+
+    function renderFavorites() {
+      syncAllergyCheckboxes();
+      const grid = document.getElementById('favoritesGrid');
+      if(!grid) return;
+      grid.innerHTML = '';
+
+      const userFavs = (userSettings[currentProfile] && userSettings[currentProfile].favorites) || [];
+      const favs = mealsDatabase.filter(m => userFavs.includes(m.name) || m.isHomeRecipe);
+      if(favs.length === 0) {
+        grid.innerHTML = `<p style="color:var(--text-muted); font-size:0.8rem;">No starred favorites or home recipes saved for ${currentProfile} yet.</p>`;
+        return;
+      }
+
+      favs.forEach(meal => {
+        const defaultImg = meal.img || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80";
+
+        grid.innerHTML += `
+          <div class="meal-card">
+            <img src="${defaultImg}" alt="${meal.name}" class="meal-card-img">
+            <div class="meal-card-body">
+              <b>${meal.name}</b>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${meal.time} • ${meal.cuisine} • 🔥 ${meal.cal}</div>
+              <button class="btn btn-purple btn-sm" style="margin-top:8px; width:100%; justify-content:center;" onclick="openInstructionsModalDirect('${meal.name}')">📖 Instructions</button>
+              <button class="btn btn-green btn-sm" style="margin-top:4px; width:100%; justify-content:center;" onclick="addMealIngredientsToShoppingDirect('${meal.name}')">+ Add Missing Ingredients</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function togglePantryOCR() {
+      const box = document.getElementById('pantryOCRBox');
+      if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function processPantryOCR() {
+      const text = document.getElementById('pantryOCRText').value.trim();
+      if (!text) return;
+
+      const items = text.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      items.forEach(name => {
+        pantryData.push({ name: name, qty: 1, category: "Pantry Import", addedBy: currentProfile });
+      });
+
+      saveLocalCaches();
+      renderPantry();
+      pushHAPantry();
+      document.getElementById('pantryOCRText').value = '';
+      togglePantryOCR();
+      alert(`Imported ${items.length} items into Pantry!`);
+    }
+
+    // BOOTSTRAP INITIALIZATION (SYNCHRONOUS GUARANTEE)
+    function initApp() {
+      try {
+        loadLocalCaches();
+
+        const userKeys = Object.keys(userSettings);
+        if (userKeys.length > 0 && !userKeys.includes(currentProfile)) {
+          currentProfile = userKeys[0];
+        }
+
+        renderUserSelectDropdown();
+        renderProfilesManagerList();
+        if (document.getElementById("haTokenInput")) {
+          document.getElementById("haTokenInput").value = haToken;
+        }
+        syncAllergyCheckboxes();
+        renderCuisinePickers();
+
+        // 1. Direct Render on Load
+        activeMealTime = 'Dinner';
+        activeCuisine = 'All';
+        categoryPageOffset = 0;
+        
+        document.querySelectorAll('.meal-time-btn').forEach(b => b.classList.remove('active'));
+        const dinnerBtn = document.getElementById('btn-Dinner');
+        if (dinnerBtn) dinnerBtn.classList.add('active');
+        
+        const label = document.getElementById('activeMealTimeLabel');
+        if (label) label.innerText = 'Dinner';
+        
+        renderMealOptions();
+        renderPantry();
+        renderShopping();
+        renderCalendar();
+        renderComments();
+        renderFavorites();
+
+        // 2. Background HA Polling
+        setTimeout(() => {
+          fetchHAData();
+          setInterval(fetchHAData, 4000);
+        }, 1000);
+      } catch (err) {
+        console.error("Initialization error:", err);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>
