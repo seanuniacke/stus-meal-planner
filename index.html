@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Stu's Meal Planner</title>
-  <link rel="manifest" href="./manifest.json">
+  <title>TEST Meal Planner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script>
+  console.log("★★★ SCRIPT IS ACTIVELY RUNNING ★★★");
+      // Add this near the top of your main script section
 const CLOUD_SYNC_CONFIG = {
   provider: "supabase",
   url: "https://udmyrcwwgmkssamioiuo.supabase.co",
@@ -26,7 +27,11 @@ let supabaseUser = null;
 let cloudSyncReady = false;
 let cloudSyncInFlight = false;
   
-    </script>
+    // Register Service Worker for offline caching
+console.log("Service worker temporarily disabled for Supabase migration.");
+    
+
+  </script>
   <script>
     window.FALLBACK_FOOD_IMG = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22400%22 viewBox=%220 0 600 400%22%3E%3Crect width=%22600%22 height=%22400%22 fill=%22%231e293b%22/%3E%3Ctext x=%2250%25%22 y=%2246%25%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2222%22 fill=%22%2394a3b8%22%3E🍽️ Delicious Recipe%3C/text%3E%3Ctext x=%2250%25%22 y=%2258%25%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2216%22 fill=%22%2364748b%22%3EStu%27s Meal Planner%3C/text%3E%3C/svg%3E";
     function handleMealImgError(img) {
@@ -274,10 +279,10 @@ let cloudSyncInFlight = false;
         <button class="header-shopping-btn" onclick="switchTab('shopping')" title="Open Shopping List">🛒 List</button>
         
         <div class="user-pill-badge-wrap">
-          <span id="activeUserBadge" class="user-pill-badge" onclick="openModal('userProfileModal')">
+          <span id="activeUserBadge" class="user-pill-badge" onclick="window.openUserProfile()">
             <span>👤 Sean</span>
           </span>
-          <span id="headerBellNotif" class="header-bell-badge" onclick="openModal('userProfileModal')" title="Dinner Chef Reminder Active!">🔔</span>
+          <span id="headerBellNotif" class="header-bell-badge" onclick="window.openUserProfile()" title="Dinner Chef Reminder Active!">🔔</span>
         </div>
         
         <button class="btn btn-sm" onclick="openSettings()" title="Settings & Family Hub" style="padding:5px 8px; font-size:0.85rem;">⚙️</button>
@@ -1338,7 +1343,7 @@ let cloudSyncInFlight = false;
     (function initAutoVersion() {
       let ver = localStorage.getItem('stus_app_version');
       if (!ver) {
-        ver = "Pro v72.0 Supabase";
+        ver = "Pro v73.0 Supabase";
       } else {
         const parts = ver.replace("Pro v", "").split(".");
         const major = parts[0] || "71";
@@ -1561,23 +1566,19 @@ let cloudSyncInFlight = false;
     async function loadHouseholdMembership(){if(!supabaseUser)return;const{data,error}=await supabaseClient.from('household_members').select('id,household_id,profile_name,email,phone,timezone,push_enabled,notification_day_before,notification_morning_of,households:household_id(id,name,owner_user_id,invite_code)').eq('user_id',supabaseUser.id).maybeSingle();if(error){console.warn('Household lookup:',error.message);return;}if(data){Store.state.householdId=data.household_id;Store.state.householdMemberId=data.id;Store.state.householdName=data.households?.name||'Household';Store.state.householdInviteCode=data.households?.invite_code||'';if(data.profile_name)Store.state.currentProfile=data.profile_name;}}
     window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();b.innerHTML=`<p>You are connected to <b>${h?.name||Store.state.householdName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${h?.invite_code||'—'}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
     window.createHousehold=async function(){const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=Math.random().toString(36).slice(2,10).toUpperCase();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
-    window.joinHousehold=async function(){const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data,error}=await supabaseClient.rpc('join_household_by_invite',{p_invite_code:code,p_profile_name:profile});if(error||!data?.[0])return showToast(error?.message||'Invite code not found.');const h=data[0];Store.state.householdId=h.household_id;Store.state.householdMemberId=h.member_id;Store.state.householdName=h.household_name;Store.state.householdInviteCode=h.invite_code||code;Store.state.currentProfile=h.profile_name||profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.household_name);};
+    window.joinHousehold=async function(){const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data:h,error}=await supabaseClient.from('households').select('id,name,invite_code').eq('invite_code',code).maybeSingle();if(error||!h)return showToast('Invite code not found.');const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:profile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Could not join household: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.currentProfile=profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.name);};
     function subscribeToSupabaseChanges(){if(!cloudSyncReady||!supabaseUser||!Store.state.householdId||supabaseChannel)return;supabaseChannel=supabaseClient.channel('mealflow-household-'+Store.state.householdId).on('postgres_changes',{event:'*',schema:'public',table:'household_state',filter:`household_id=eq.${Store.state.householdId}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe();}
     window.saveState=async function(){persistLocalState();if(!cloudSyncReady||!supabaseClient||!supabaseUser||!Store.state.householdId||cloudSyncInFlight)return;cloudSyncInFlight=true;try{const payload=getCloudPayload();const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:payload,updated_at:payload.updatedAt,updated_by:supabaseUser.id},{onConflict:'household_id'});if(error)throw error;}catch(e){console.error('Household cloud save error:',e)}finally{cloudSyncInFlight=false}};
     async function pullStateFromCloud(){if(!cloudSyncReady||!supabaseClient||!supabaseUser||!Store.state.householdId)return;try{const{data,error}=await supabaseClient.from('household_state').select('data,updated_at').eq('household_id',Store.state.householdId).maybeSingle();if(error)throw error;if(data?.data)applyCloudState(data.data,{silent:true});else await window.saveState()}catch(e){console.error('Household cloud pull error:',e)}}
-    // Cloud-only architecture: Supabase is the sync/notification backend.
     window.pushStateToCloud=async function(customPayload){
-      if(customPayload&&Store.state.householdId&&supabaseClient&&supabaseUser){
-        const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString(),updated_by:supabaseUser.id},{onConflict:'household_id'});
-        if(error) console.warn(error.message);
-      } else await window.saveState();
+      if(customPayload && Store.state.householdId && supabaseClient && supabaseUser){
+        const {error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString(),updated_by:supabaseUser.id},{onConflict:'household_id'});
+        if(error) console.warn('Cloud save error:', error.message);
+      } else { await window.saveState(); }
     };
 
-
-    window.addEventListener('load',()=>{if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('Service worker registration failed',e));}});
-
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
-    const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||''; // Set in deployment config before enabling push.
+    const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'';
     function urlBase64ToUint8Array(x){const p='='.repeat((4-x.length%4)%4),b=(x+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
     window.registerPushNotifications=async function(){if(!supabaseUser||!Store.state.householdId)return showToast('Join a household first.');if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');if(!PUSH_VAPID_PUBLIC_KEY)return showToast('Push is ready, but the VAPID key still needs to be configured.');try{const reg=await navigator.serviceWorker.register('./sw.js');const perm=await Notification.requestPermission();if(perm!=='granted')return showToast('Notification permission was not granted.');let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});const j=sub.toJSON();const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});if(error)throw error;showToast('🔔 Push notifications enabled')}catch(e){console.error(e);showToast('Could not enable push notifications.')}};
 
@@ -1640,23 +1641,9 @@ let cloudSyncInFlight = false;
       }
     }
 
-    // ==========================================
-    // Offline changes stay in localStorage and are uploaded on the next cloud save.
+    // Offline changes are kept in localStorage. When signed into a household,
+    // saveState() also writes the shared state to Supabase.
     function queueOfflineAction(actionType,payload){ window.saveState(); }
-    window.syncOfflineQueues=async function(){ if(navigator.onLine) await window.saveState(); };
-
-// Upgraded online listener that handles both pushing queued offline changes and pulling live updates
-window.addEventListener('online', async () => {
-  showToast("🌐 Connection restored! Syncing devices...");
-  
-  // 1. Send any queued offline changes to Supabase
-  if (typeof window.syncOfflineQueues === 'function') {
-    await window.syncOfflineQueues();
-  }
-
-  // 2. Fetch latest changes from your server so desktop updates appear on mobile
-  await pullStateFromCloud();
-});
 
     function getMealAllergyAlerts(meal) {
       const curUser = Store.state.currentProfile;
@@ -1913,6 +1900,86 @@ window.addEventListener('online', async () => {
           </div>
         `).join('');
       }
+    };
+
+    // ==========================================
+    // PERSONAL PROFILE / DIET / ALLERGY MANAGEMENT
+    // This works for standalone users and does not require a household.
+    // ==========================================
+    function getCurrentUserSettings(){
+      const name = Store.state.currentProfile || 'Sean';
+      if (!Store.state.userSettings[name]) {
+        Store.state.userSettings[name] = { allergies: [], dietary: 'None (Standard)', email: '', phone: '' };
+      }
+      return Store.state.userSettings[name];
+    }
+
+    function renderProfileAllergies(){
+      const box = document.getElementById('profileAllergiesList');
+      if (!box) return;
+      const settings = getCurrentUserSettings();
+      const selected = new Set((settings.allergies || []).map(a => String(a).toLowerCase()));
+      const allergies = Array.from(new Set([...(Store.state.masterAllergies || []), ...(settings.allergies || [])]));
+      box.innerHTML = allergies.map(a => {
+        const checked = selected.has(String(a).toLowerCase()) ? 'checked' : '';
+        const safe = String(a).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<label style="display:flex;align-items:center;gap:6px;background:#111827;border:1px solid var(--border-color);border-radius:6px;padding:7px;cursor:pointer;"><input type="checkbox" class="profile-allergy-check" value="${safe}" ${checked}> <span>${a}</span></label>`;
+      }).join('');
+    }
+
+    function populateUserProfileModal(){
+      const settings = getCurrentUserSettings();
+      const title = document.getElementById('profileModalTitle');
+      const dietary = document.getElementById('userDietaryPreferenceSelect');
+      if (title) title.textContent = `👤 ${Store.state.currentProfile || 'User'} Profile`;
+      if (dietary) dietary.value = settings.dietary || 'None (Standard)';
+      renderProfileAllergies();
+      const box = document.getElementById('profileChefNotificationBox');
+      if (box) box.textContent = Store.state.householdId ? 'Household reminders can be shared across your signed-in devices.' : 'Personal meal reminders stay on this device until cloud/household features are enabled.';
+    }
+
+    window.openUserProfile = function(){
+      populateUserProfileModal();
+      openModal('userProfileModal');
+    };
+
+    window.addCustomAllergyProfile = function(){
+      const input = document.getElementById('customAllergyInputProfile');
+      const value = (input?.value || '').trim();
+      if (!value) return;
+      const settings = getCurrentUserSettings();
+      const exists = (settings.allergies || []).some(a => String(a).toLowerCase() === value.toLowerCase());
+      if (!exists) settings.allergies = [...(settings.allergies || []), value];
+      if (!Store.state.masterAllergies.some(a => String(a).toLowerCase() === value.toLowerCase())) Store.state.masterAllergies.push(value);
+      if (input) input.value = '';
+      renderProfileAllergies();
+      showToast(`✓ ${value} added to ${Store.state.currentProfile}'s allergies`);
+    };
+
+    window.saveUserProfileDirect = async function(){
+      const settings = getCurrentUserSettings();
+      const dietary = document.getElementById('userDietaryPreferenceSelect');
+      const checks = Array.from(document.querySelectorAll('.profile-allergy-check:checked'));
+      settings.dietary = dietary?.value || 'None (Standard)';
+      settings.allergies = checks.map(c => c.value);
+      persistLocalState();
+      if (Store.state.householdId && cloudSyncReady) await window.saveState();
+      closeModal('userProfileModal');
+      if (typeof UI.renderMeals === 'function') UI.renderMeals();
+      showToast(`✓ ${Store.state.currentProfile}'s profile saved`);
+    };
+
+    UI.renderAllergiesProfile = renderProfileAllergies;
+    UI.renderUserManagement = function(){
+      const box = document.getElementById('settingsUsers');
+      if (!box) return;
+      const names = Object.keys(Store.state.userSettings || {});
+      const list = names.map(n => {
+        const u = Store.state.userSettings[n] || {};
+        return `<div class="list-item-row"><div><b>${n}</b><div style="font-size:.72rem;color:var(--text-muted);">${u.dietary || 'None (Standard)'} • ${(u.allergies || []).join(', ') || 'No allergies listed'}</div></div><button class="btn btn-sm btn-blue" onclick="Store.state.currentProfile='${String(n).replace(/'/g,"\\'")}'; window.openUserProfile();">Edit</button></div>`;
+      }).join('');
+      const listTarget = box.querySelector('[data-profile-list]');
+      if (listTarget) listTarget.innerHTML = list;
     };
 
     // ==========================================
@@ -2218,7 +2285,7 @@ window.togglePlannerActionsMenu = function(e) {
   if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 };
 
-   window.addEventListener('online', () => { window.syncOfflineQueues(); });
+   window.addEventListener('online', () => { if (cloudSyncReady && Store.state.householdId) pullStateFromCloud(); });
 
 window.signOutCloudSync = async function() {
   if (supabaseClient) {
@@ -2265,17 +2332,14 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.renderShopping();
   UI.renderFavorites();
   
-  if (navigator.onLine) {
-    window.syncOfflineQueues();
-    if (typeof pullStateFromCloud === 'function') {
-      pullStateFromCloud();
-    }
+  if (navigator.onLine && cloudSyncReady && Store.state.householdId) {
+    pullStateFromCloud();
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+  if (verTag) verTag.innerText = window.APP_VERSION || "Pro v73.0 Supabase";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "Pro v73.0 Supabase";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
