@@ -1,0 +1,10 @@
+{
+  "name": "Stu's Meal Planner",
+  "short_name": "Meal Planner",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#8b5cf6",
+  "description": "Shared household meal planning, pantry and shopping management.",
+  "icons": []
+}
