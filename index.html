@@ -1047,25 +1047,33 @@ console.log("Service worker temporarily disabled for Supabase migration.");
         <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem;">
           <div>
             <label style="font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Search or Type Food Name:</label>
-            <input type="text" id="genericAddItemInput" placeholder="Type food name... (press Enter to Add)" oninput="handleSmartFoodInput(this.value)" style="width:100%; padding:10px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color);">
+            <input type="text" id="genericAddItemInput" placeholder="Type an item... (press Enter to Add)" oninput="handleSmartFoodInput(this.value)" style="width:100%; padding:10px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color);">
           </div>
 
           <div>
             <label style="font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Select Supermarket Aisle / Category:</label>
             <select id="addItemCategorySelect" onchange="handleCategorySelectChange(this.value)" style="width:100%; padding:8px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color); font-weight:600;">
-              <option value="Produce: Fresh Vegetables">🥦 Produce: Fresh Vegetables & Roots (Tomatoes, Spinach, Potatoes, Onions)</option>
-              <option value="Produce: Fresh Herbs">🌿 Produce: Fresh Herbs & Greens (Cilantro, Basil, Parsley, Ginger)</option>
-              <option value="Produce: Fresh Fruits">🍎 Produce: Fresh Fruits (Apples, Berries, Avocados, Lemons)</option>
-              <option value="Meat: Beef & Steaks">🥩 Meat: Beef & Steaks (Ground Beef, Ribeye, Flank)</option>
-              <option value="Meat: Poultry & Chicken">🍗 Meat: Fresh Chicken & Turkey (Breasts, Thighs)</option>
-              <option value="Meat: Pork & Sausage">🥓 Meat: Pork, Bacon, Chorizo & Sausage</option>
-              <option value="Seafood: Fish & Shellfish">🐟 Seafood: Fish, Salmon, Prawns, Shrimp & Clams</option>
-              <option value="Dairy: Fresh Milk & Cream">🥛 Dairy: Milk, Whipping Cream & Butter</option>
-              <option value="Dairy: Farm Eggs">🥚 Dairy: Farm Fresh Eggs</option>
-              <option value="Dairy: Cheese">🧀 Cheese: Cheddar, Mozzarella, Parmesan & Curds</option>
-              <option value="Pantry: Oils, Sauces & Spices">🫒 Pantry: Olive Oil, Soy Sauce, Spices, Curry Powder & Pastes</option>
-              <option value="Grains: Pasta, Rice & Noodles">🍝 Grains: Pasta, Noodles, Jasmine Rice & Breadcrumbs</option>
-              <option value="Canned Goods: Beans & Broths">🥫 Canned: Diced Tomatoes, Beans, Broths & Coconut Milk</option>
+              <option value="General: Household">🛒 General: Household / Other</option>
+              <option value="Produce: Fresh Vegetables">🥦 Produce: Fresh Vegetables & Roots</option>
+              <option value="Produce: Fresh Herbs">🌿 Produce: Fresh Herbs & Greens</option>
+              <option value="Produce: Fresh Fruits">🍎 Produce: Fresh Fruits</option>
+              <option value="Meat: Beef & Steaks">🥩 Meat: Beef & Steaks</option>
+              <option value="Meat: Poultry & Chicken">🍗 Meat: Chicken & Turkey</option>
+              <option value="Meat: Pork & Sausage">🥓 Meat: Pork, Bacon & Sausage</option>
+              <option value="Seafood: Fish & Shellfish">🐟 Seafood: Fish & Shellfish</option>
+              <option value="Dairy & Eggs: Milk, Cheese & Eggs">🥛 Dairy & Eggs: Milk, Cheese & Eggs</option>
+              <option value="Pantry: Oils, Sauces & Spices">🫒 Pantry: Oils, Sauces & Spices</option>
+              <option value="Grains & Bakery: Bread, Pasta & Rice">🍞 Grains & Bakery: Bread, Pasta & Rice</option>
+              <option value="Canned & Jarred: Beans, Soups & Sauces">🥫 Canned & Jarred Goods</option>
+              <option value="Frozen: Frozen Foods">❄️ Frozen Foods</option>
+              <option value="Beverages: Drinks & Coffee">🥤 Beverages: Drinks, Coffee & Tea</option>
+              <option value="Snacks & Sweets: Treats">🍿 Snacks & Sweets</option>
+              <option value="Household: Cleaning & Home">🧽 Household: Cleaning & Home</option>
+              <option value="Paper & Disposable: Bags, Wraps & Paper">🧻 Paper & Disposable: Bags, Wraps & Paper</option>
+              <option value="Personal Care: Health & Toiletries">🧴 Personal Care: Health & Toiletries</option>
+              <option value="Pet Supplies: Food & Care">🐾 Pet Supplies: Food & Care</option>
+              <option value="Baby & Kids: Care & Supplies">🧸 Baby & Kids: Care & Supplies</option>
+              <option value="Other: Miscellaneous">📦 Other: Miscellaneous</option>
             </select>
           </div>
 
@@ -1342,7 +1350,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.3";
+      const ver = "v0.9.4";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1596,7 +1604,14 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       const channelName=isHousehold?'mealflow-household-'+Store.state.householdId:'mealflow-user-'+supabaseUser.id;
       const table=isHousehold?'household_state':'app_state';
       const filter=isHousehold?`household_id=eq.${Store.state.householdId}`:`user_id=eq.${supabaseUser.id}`;
-      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data);}).subscribe(status=>{console.log('MealFlow realtime:',status,table);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('MealFlow realtime subscription failed for',table);});
+      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data);}).subscribe(status=>{
+        console.log('MealFlow realtime:',status,table);
+        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+          console.warn('MealFlow realtime subscription failed for',table);
+          if(supabaseChannel){try{supabaseClient.removeChannel(supabaseChannel);}catch(e){}supabaseChannel=null;}
+          setTimeout(()=>{if(cloudSyncReady&&supabaseUser&&navigator.onLine&&!supabaseChannel)subscribeToSupabaseChanges();},3000);
+        }
+      });
     }
     window.saveState=async function(){
       persistLocalState();
@@ -2053,6 +2068,43 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       }
     };
 
+// Smart shopping/pantry categorization. Food is no longer the default: common
+// household, personal-care and pet items are classified automatically.
+window._mealflowCategoryManuallySelected = false;
+window.handleCategorySelectChange = function(value) {
+  window._mealflowCategoryManuallySelected = true;
+};
+window.handleSmartFoodInput = function(value) {
+  const select = document.getElementById('addItemCategorySelect');
+  if (!select || window._mealflowCategoryManuallySelected) return;
+  const v = String(value || '').toLowerCase().trim();
+  let category = 'General: Household';
+  const rules = [
+    [/cat\s*(litter|sand)|kitty\s*litter|litter/, 'Pet Supplies: Food & Care'],
+    [/toothpaste|toothbrush|shampoo|conditioner|deodorant|soap|body wash|razor|floss|mouthwash|lotion|sunscreen|tampon|pad(s)?|toiletries/, 'Personal Care: Health & Toiletries'],
+    [/paper towel|toilet paper|tissue|napkin|garbage bag|garbage bags|trash bag|zip ?lock|ziploc|plastic bag|lunch bag|sandwich bag|cling wrap|plastic wrap|aluminum foil|foil|wax paper/, 'Paper & Disposable: Bags, Wraps & Paper'],
+    [/dish soap|dishwasher|detergent|laundry|bleach|cleaner|cleaning|disinfect|sponge|scrub|broom|mop|vacuum|air freshener/, 'Household: Cleaning & Home'],
+    [/dog food|cat food|pet food|cat treats|dog treats|leash|collar|pet toy|flea|tick/, 'Pet Supplies: Food & Care'],
+    [/diaper|baby wipes|formula|baby food|pacifier|bottle/, 'Baby & Kids: Care & Supplies'],
+    [/milk|cream|butter|cheese|yogurt|cottage cheese|sour cream|egg(s)?/, 'Dairy & Eggs: Milk, Cheese & Eggs'],
+    [/beef|steak|ground beef|veal/, 'Meat: Beef & Steaks'],
+    [/chicken|turkey|poultry/, 'Meat: Poultry & Chicken'],
+    [/pork|bacon|ham|sausage|chorizo/, 'Meat: Pork & Sausage'],
+    [/salmon|tuna|shrimp|prawn|fish|cod|halibut|seafood|clam|mussel/, 'Seafood: Fish & Shellfish'],
+    [/tomato|potato|onion|carrot|lettuce|spinach|pepper|broccoli|cucumber|celery|vegetable/, 'Produce: Fresh Vegetables'],
+    [/cilantro|basil|parsley|ginger|mint|rosemary|thyme|herb/, 'Produce: Fresh Herbs'],
+    [/apple|banana|orange|lemon|lime|berry|berries|avocado|grape|melon|fruit/, 'Produce: Fresh Fruits'],
+    [/bread|bun|bagel|croissant|pita|tortilla|pasta|noodle|rice|flour|oat|cereal|breadcrumb/, 'Grains & Bakery: Bread, Pasta & Rice'],
+    [/bean|soup|broth|stock|canned|jarred|pickle|olives|coconut milk/, 'Canned & Jarred: Beans, Soups & Sauces'],
+    [/olive oil|oil|vinegar|ketchup|mustard|mayonnaise|soy sauce|sauce|spice|salt|pepper|seasoning/, 'Pantry: Oils, Sauces & Spices'],
+    [/frozen|ice cream|frozen pizza|frozen vegetable/, 'Frozen: Frozen Foods'],
+    [/coffee|tea|water|juice|soda|pop|drink|beverage/, 'Beverages: Drinks & Coffee'],
+    [/chip|chips|cookie|cookies|cracker|crackers|candy|chocolate|snack|popcorn/, 'Snacks & Sweets: Treats']
+  ];
+  for (const [re, cat] of rules) { if (re.test(v)) { category = cat; break; } }
+  select.value = category;
+};
+
 window.submitActiveTargetItem = async function() {
   console.log("=== SUBMIT ACTIVE TARGET ITEM STARTED ===");
   const nameInput = document.getElementById('genericAddItemInput');
@@ -2276,6 +2328,9 @@ window.autoSyncAllCalendars = function() {
 
     window.openAddItemModal = function(ctx) {
       Store.state.activeAddItemContext = ctx;
+      window._mealflowCategoryManuallySelected = false;
+      const categorySelect = document.getElementById('addItemCategorySelect');
+      if (categorySelect) categorySelect.value = 'General: Household';
       document.getElementById('addItemModalTitle').innerText = ctx === 'pantry' ? "➕ Add to Pantry Inventory" : "➕ Add to Shopping List";
       document.getElementById('addItemSubmitBtn').innerText = ctx === 'pantry' ? "+ Add to Pantry" : "+ Add to Shopping List";
       openModal('addItemModal');
@@ -2400,9 +2455,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.3";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.4";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.3";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.4";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
