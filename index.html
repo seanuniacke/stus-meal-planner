@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Stu's Meal Planner</title>
+  <title>TEST Meal Planner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
   <script>
@@ -27,16 +27,8 @@ let supabaseUser = null;
 let cloudSyncReady = false;
 let cloudSyncInFlight = false;
   
-    // Register the app shell service worker. GitHub Pages hosts this app under /stus-meal-planner/.
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(() => {
-          console.log('MealFlow service worker registered.');
-        }).catch(err => {
-          console.warn('MealFlow service worker registration failed:', err);
-        });
-      });
-    }
+    // Register Service Worker for offline caching
+console.log("Service worker temporarily disabled for Supabase migration.");
     
 
   </script>
@@ -101,7 +93,6 @@ let cloudSyncInFlight = false;
     .header-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; width: 100%; margin: 0 auto; flex-wrap: nowrap; }
     .brand { display: flex; align-items: center; gap: 5px; font-size: 1.05rem; font-weight: 800; color: #ffffff; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
     .version-tag { background: #064e3b; color: #34d399; font-size: 0.62rem; padding: 2px 5px; border-radius: 4px; font-weight: 800; margin-left: 2px; }
-    .connection-tag { background:#374151; color:#d1d5db; font-size:0.62rem; padding:2px 5px; border-radius:4px; font-weight:800; margin-left:3px; }
     .top-nav-tabs { display: flex; gap: 6px; overflow-x: auto; }
     .nav-btn { background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; white-space: nowrap; transition: 0.15s; }
     .nav-btn:hover { border-color: var(--accent-amber); }
@@ -272,7 +263,7 @@ let cloudSyncInFlight = false;
       <div class="brand" onclick="switchTab('ideas')">
         <span>👨‍🍳</span>
         <span>Stu's Meal Planner</span>
-        <span class="version-tag version-tag-desktop" id="headerVersionTag">v0.9.2</span><span class="connection-tag" id="connectionStatusTag">Checking…</span>
+        <span class="version-tag version-tag-desktop" id="headerVersionTag">Pro</span>
       </div>
 
       <div class="top-nav-tabs">
@@ -865,7 +856,7 @@ let cloudSyncInFlight = false;
           <div style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:12px; margin-bottom:14px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <b style="font-size:0.82rem; color:var(--accent-amber);">Current Active User:</b>
-              <span class="version-tag" id="settingsVersionTag">v0.9.2</span>
+              <span class="version-tag" id="settingsVersionTag">Pro</span>
             </div>
             <div style="display:flex; gap:6px; margin-top:6px;">
               <select id="settingsUserSelect" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-weight:700;" onchange="switchUser(this.value)"></select>
@@ -1349,8 +1340,9 @@ let cloudSyncInFlight = false;
   </div>
 
 <script>
-    // Single source of truth for the app/build version. Bump this manually when releasing a new build.
-    window.APP_VERSION = "v0.9.2";
+    // MealFlow application version. Bump only for deliberate releases.
+    window.APP_VERSION = "v0.9.3";
+    localStorage.setItem('stus_app_version', window.APP_VERSION);
 
     const userColors = {
       Sean: "var(--user-sean)",
@@ -1556,75 +1548,65 @@ let cloudSyncInFlight = false;
     function isSupabaseConfigured() { return typeof window.supabase !== 'undefined' && SUPABASE_CONFIG_READY; }
     function getCloudPayload() { return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
     function persistLocalState(){ localStorage.setItem('stus_pantry_data',JSON.stringify(Store.state.pantryData)); localStorage.setItem('stus_shopping_data',JSON.stringify(Store.state.shoppingData)); localStorage.setItem('stus_calendar_data',JSON.stringify(Store.state.calendarSchedule)); localStorage.setItem('stus_custom_recipes',JSON.stringify(Store.state.customRecipes)); localStorage.setItem('stus_starred_ids',JSON.stringify(Store.state.starredIds)); localStorage.setItem('stus_chat_data',JSON.stringify(Store.state.chatData)); localStorage.setItem('stus_user_settings',JSON.stringify(Store.state.userSettings)); localStorage.setItem('stus_current_profile',Store.state.currentProfile); }
-    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}if(!o.silent)showToast('🔄 Synced with household!');} return c; }
+    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}if(!o.silent)showToast('🔄 Synced with cloud!');} return c; }
     function updateHouseholdBadge(){const b=document.getElementById('householdSyncBadge'),t=document.getElementById('householdSyncText');if(!b||!t)return;if(cloudSyncReady&&Store.state.householdId){b.textContent='Connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent=`${Store.state.householdName||'Household'} • Shared cloud sync is active.`;}else if(supabaseUser){b.textContent='No household';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Create a household or join one with an invite code.';}else{b.textContent='Not connected';b.style.background='#374151';b.style.color='#d1d5db';t.textContent='Sign in to create or join a shared household.';}}
-    function updateConnectionStatus(mode, detail) {
-      const el = document.getElementById('connectionStatusTag');
-      if (!el) return;
-      if (mode === 'online') { el.textContent = 'Online'; el.style.background = '#064e3b'; el.style.color = '#34d399'; }
-      else if (mode === 'offline') { el.textContent = 'Offline'; el.style.background = '#78350f'; el.style.color = '#fbbf24'; }
-      else { el.textContent = 'Checking…'; el.style.background = '#374151'; el.style.color = '#d1d5db'; }
-      el.title = detail || (mode === 'online' ? 'Internet and MealFlow cloud are available.' : 'MealFlow is using local device storage.');
-    }
-
-    async function checkInternetAndCloud(timeoutMs=4500) {
-      if (!navigator.onLine) return false;
-      if (!isSupabaseConfigured()) return true;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(`${CLOUD_SYNC_CONFIG.url}/auth/v1/health`, {
-          method:'GET', cache:'no-store', signal:controller.signal
-        });
-        return res.ok || res.status === 401 || res.status === 404;
-      } catch (e) {
-        return false;
-      } finally { clearTimeout(timer); }
-    }
-
-    function ensureSupabaseAuthModal() {
-      // Authentication is intentionally never offered as an "offline" choice.
-      // Offline users simply use the cached/local app; cloud login is shown only online.
-      if (!navigator.onLine || document.getElementById('supabaseAuthModal')) return;
-      const st=document.createElement('style');st.id='supabaseAuthStyles';st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}`;document.head.appendChild(st);
-      const m=document.createElement('div');m.id='supabaseAuthModal';m.innerHTML=`<div id="supabaseAuthCard"><div style="font-size:.72rem;color:#94a3b8;margin-bottom:6px">Stu's Meal Planner ${window.APP_VERSION}</div><h2>☁️ MealFlow Cloud</h2><p>Sign in to sync your household across devices.</p><input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address"><input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password"><div id="supabaseAuthButtons"><button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button><button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button></div><div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div></div>`;document.body.appendChild(m);
-      const e=()=>document.getElementById('supabaseAuthEmail').value.trim(),pw=()=>document.getElementById('supabaseAuthPassword').value,stt=x=>document.getElementById('supabaseAuthStatus').textContent=x;
-      document.getElementById('supabaseSignInBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password.');stt('Signing in…');const{data,error}=await supabaseClient.auth.signInWithPassword({email:e(),password:pw()});if(error)return stt(error.message);await onSupabaseSignedIn(data.session)};
-      document.getElementById('supabaseSignUpBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password first.');if(pw().length<6)return stt('Password must be at least 6 characters.');stt('Creating account…');const{data,error}=await supabaseClient.auth.signUp({email:e(),password:pw()});if(error)return stt(error.message);if(data.session)await onSupabaseSignedIn(data.session);else stt('Account created. Check your email if confirmation is required, then sign in.')};
-    }
-
-    async function onSupabaseSignedIn(session){supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=!!navigator.onLine;const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';updateConnectionStatus(navigator.onLine?'online':'offline',navigator.onLine?'Internet and MealFlow cloud are available.':'Signed-in session found, but the device is offline. Changes stay on this device.');await loadHouseholdMembership();updateHouseholdBadge();if(navigator.onLine&&Store.state.householdId){await pullStateFromCloud();subscribeToSupabaseChanges();registerPushNotifications().catch(()=>{});}showToast(Store.state.householdId?(navigator.onLine?'☁️ Household sync connected':'📴 Offline — household changes are saved locally'):(navigator.onLine?'☁️ Signed in — set up your household':'📴 Offline — signed-in data is available locally'));}
-
-    async function initSupabaseCloudSync(){
-      if(!isSupabaseConfigured()){ updateConnectionStatus(navigator.onLine?'online':'offline'); return; }
-      try {
-        supabaseClient=window.supabase.createClient(CLOUD_SYNC_CONFIG.url,CLOUD_SYNC_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-        supabaseClient.auth.onAuthStateChange((ev,se)=>{if(ev==='SIGNED_IN'&&se)setTimeout(()=>onSupabaseSignedIn(se),0);if(ev==='SIGNED_OUT'){cloudSyncReady=false;supabaseUser=null;Store.state.householdId=null;updateHouseholdBadge();}});
-        const{data,error}=await supabaseClient.auth.getSession();
-        if(error) throw error;
-        if(data.session){
-          await onSupabaseSignedIn(data.session);
-          return;
-        }
-        const reachable=await checkInternetAndCloud();
-        if(reachable){ updateConnectionStatus('online'); ensureSupabaseAuthModal(); }
-        else { updateConnectionStatus('offline','No reliable Internet/cloud connection. Using the cached/local app.'); }
-      } catch(e) {
-        console.error('Supabase initialization error:',e);
-        cloudSyncReady=false;
-        updateConnectionStatus('offline','MealFlow could not reach Supabase. Using local device storage.');
-        // Do not block the app with a login dialog when cloud connectivity fails.
-      }
-    }
-
+    function ensureSupabaseAuthModal(){if(document.getElementById('supabaseAuthModal'))return;const st=document.createElement('style');st.id='supabaseAuthStyles';st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}`;document.head.appendChild(st);const m=document.createElement('div');m.id='supabaseAuthModal';m.innerHTML=`<div id="supabaseAuthCard"><h2>☁️ MealFlow Cloud</h2><p>Sign in to sync your household across devices.</p><input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address"><input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password"><div id="supabaseAuthButtons"><button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button><button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button></div><div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div></div>`;document.body.appendChild(m);const e=()=>document.getElementById('supabaseAuthEmail').value.trim(),pw=()=>document.getElementById('supabaseAuthPassword').value,stt=x=>document.getElementById('supabaseAuthStatus').textContent=x;document.getElementById('supabaseSignInBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password.');stt('Signing in…');const{data,error}=await supabaseClient.auth.signInWithPassword({email:e(),password:pw()});if(error)return stt(error.message);await onSupabaseSignedIn(data.session)};document.getElementById('supabaseSignUpBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password first.');if(pw().length<6)return stt('Password must be at least 6 characters.');stt('Creating account…');const{data,error}=await supabaseClient.auth.signUp({email:e(),password:pw()});if(error)return stt(error.message);if(data.session)await onSupabaseSignedIn(data.session);else stt('Account created. Check your email if confirmation is required.')}}
+    async function onSupabaseSignedIn(session){supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=true;const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();registerPushNotifications().catch(()=>{});showToast(Store.state.householdId?'☁️ Household sync connected':'☁️ Cloud sync connected');}
+    async function initSupabaseCloudSync(){if(!isSupabaseConfigured())return;try{supabaseClient=window.supabase.createClient(CLOUD_SYNC_CONFIG.url,CLOUD_SYNC_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});supabaseClient.auth.onAuthStateChange((ev,se)=>{if(ev==='SIGNED_IN'&&se)setTimeout(()=>onSupabaseSignedIn(se),0);if(ev==='SIGNED_OUT'){cloudSyncReady=false;supabaseUser=null;Store.state.householdId=null;updateHouseholdBadge();}});const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;if(data.session)await onSupabaseSignedIn(data.session);else ensureSupabaseAuthModal();}catch(e){console.error('Supabase initialization error:',e);ensureSupabaseAuthModal();}}
     async function loadHouseholdMembership(){if(!supabaseUser)return;const{data,error}=await supabaseClient.from('household_members').select('id,household_id,profile_name,email,phone,timezone,push_enabled,notification_day_before,notification_morning_of,households:household_id(id,name,owner_user_id,invite_code)').eq('user_id',supabaseUser.id).maybeSingle();if(error){console.warn('Household lookup:',error.message);return;}if(data){Store.state.householdId=data.household_id;Store.state.householdMemberId=data.id;Store.state.householdName=data.households?.name||'Household';Store.state.householdInviteCode=data.households?.invite_code||'';if(data.profile_name)Store.state.currentProfile=data.profile_name;}}
     window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();b.innerHTML=`<p>You are connected to <b>${h?.name||Store.state.householdName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${h?.invite_code||'—'}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
     window.createHousehold=async function(){const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=Math.random().toString(36).slice(2,10).toUpperCase();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
     window.joinHousehold=async function(){const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data:h,error}=await supabaseClient.from('households').select('id,name,invite_code').eq('invite_code',code).maybeSingle();if(error||!h)return showToast('Invite code not found.');const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:profile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Could not join household: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.currentProfile=profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.name);};
-    function subscribeToSupabaseChanges(){if(!cloudSyncReady||!supabaseUser||!Store.state.householdId||supabaseChannel)return;supabaseChannel=supabaseClient.channel('mealflow-household-'+Store.state.householdId).on('postgres_changes',{event:'*',schema:'public',table:'household_state',filter:`household_id=eq.${Store.state.householdId}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe();}
-    window.saveState=async function(){persistLocalState();if(!cloudSyncReady||!supabaseClient||!supabaseUser||!Store.state.householdId||cloudSyncInFlight)return;cloudSyncInFlight=true;try{const payload=getCloudPayload();const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:payload,updated_at:payload.updatedAt,updated_by:supabaseUser.id},{onConflict:'household_id'});if(error)throw error;}catch(e){console.error('Household cloud save error:',e)}finally{cloudSyncInFlight=false}};
-    async function pullStateFromCloud(){if(!cloudSyncReady||!supabaseClient||!supabaseUser||!Store.state.householdId)return;try{const{data,error}=await supabaseClient.from('household_state').select('data,updated_at').eq('household_id',Store.state.householdId).maybeSingle();if(error)throw error;if(data?.data)applyCloudState(data.data,{silent:true});else await window.saveState()}catch(e){console.error('Household cloud pull error:',e)}}
-    window.pushStateToHomeAssistant=async function(customPayload){if(customPayload&&Store.state.householdId){const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString(),updated_by:supabaseUser?.id||null},{onConflict:'household_id'});if(error)console.warn(error.message)}else await window.saveState()};
+    function subscribeToSupabaseChanges(){
+      if(!cloudSyncReady||!supabaseUser||!supabaseClient||supabaseChannel)return;
+      if(Store.state.householdId){
+        supabaseChannel=supabaseClient.channel('mealflow-household-'+Store.state.householdId).on('postgres_changes',{event:'*',schema:'public',table:'household_state',filter:`household_id=eq.${Store.state.householdId}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe(status=>console.log('Supabase realtime:',status));
+      }else{
+        supabaseChannel=supabaseClient.channel('mealflow-user-'+supabaseUser.id).on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:`user_id=eq.${supabaseUser.id}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe(status=>console.log('Supabase realtime:',status));
+      }
+    }
+    window.saveState=async function(){
+      persistLocalState();
+      if(!cloudSyncReady||!supabaseClient||!supabaseUser||cloudSyncInFlight)return;
+      cloudSyncInFlight=true;
+      try{
+        const payload=getCloudPayload();
+        if(Store.state.householdId){
+          const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:payload,updated_at:payload.updatedAt,updated_by:supabaseUser.id},{onConflict:'household_id'});
+          if(error)throw error;
+        }else{
+          const{error}=await supabaseClient.from('app_state').upsert({user_id:supabaseUser.id,data:payload,updated_at:payload.updatedAt},{onConflict:'user_id'});
+          if(error)throw error;
+        }
+      }catch(e){console.error('Cloud save error:',e)}finally{cloudSyncInFlight=false}
+    };
+    async function pullStateFromCloud(){
+      if(!cloudSyncReady||!supabaseClient||!supabaseUser)return;
+      try{
+        let data,error;
+        if(Store.state.householdId){
+          ({data,error}=await supabaseClient.from('household_state').select('data,updated_at').eq('household_id',Store.state.householdId).maybeSingle());
+        }else{
+          ({data,error}=await supabaseClient.from('app_state').select('data,updated_at').eq('user_id',supabaseUser.id).maybeSingle());
+        }
+        if(error)throw error;
+        if(data?.data)applyCloudState(data.data,{silent:true});
+        else await window.saveState();
+      }catch(e){console.error('Cloud pull error:',e)}
+    }
+    window.pushStateToHomeAssistant=async function(customPayload){
+      if(customPayload&&cloudSyncReady&&supabaseClient&&supabaseUser){
+        try{
+          if(Store.state.householdId){
+            const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString(),updated_by:supabaseUser.id},{onConflict:'household_id'});if(error)throw error;
+          }else{
+            const{error}=await supabaseClient.from('app_state').upsert({user_id:supabaseUser.id,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;
+          }
+        }catch(e){console.error('Cloud compatibility push failed:',e)}
+        return;
+      }
+      await window.saveState();
+    };
     window.saveHAConfig=function(){showToast('Home Assistant integration has been removed. MealFlow now uses GitHub Pages + Supabase.')};
 
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
@@ -1692,9 +1674,23 @@ let cloudSyncInFlight = false;
     }
 
     // ==========================================
-    // Offline changes stay in localStorage. When connectivity returns, saveState() uploads the current state.
+    // Offline changes stay in localStorage and are uploaded on the next cloud save.
     function queueOfflineAction(actionType,payload){ window.saveState(); }
-    window.syncOfflineQueues=async function(){ if(navigator.onLine && cloudSyncReady) await window.saveState(); };
+    window.syncOfflineQueues=async function(){ if(navigator.onLine) await window.saveState(); };
+     });
+
+// Upgraded online listener that handles both pushing queued offline changes and pulling live updates
+window.addEventListener('online', async () => {
+  showToast("🌐 Connection restored! Syncing devices...");
+  
+  // 1. Send any queued offline actions to your Home Assistant webhook / server
+  if (typeof window.syncOfflineQueues === 'function') {
+    await window.syncOfflineQueues();
+  }
+
+  // 2. Fetch latest changes from your server so desktop updates appear on mobile
+  await pullStateFromCloud();
+});
 
     function getMealAllergyAlerts(meal) {
       const curUser = Store.state.currentProfile;
@@ -2256,6 +2252,8 @@ window.togglePlannerActionsMenu = function(e) {
   if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 };
 
+   window.addEventListener('online', () => { window.syncOfflineQueues(); });
+
 window.signOutCloudSync = async function() {
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
@@ -2301,33 +2299,20 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.renderShopping();
   UI.renderFavorites();
   
-  const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION;
-  const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION;
-  updateConnectionStatus(navigator.onLine ? 'checking' : 'offline');
-
-  // Supabase is attempted only as a cloud layer. The app itself remains usable from local storage.
-  initSupabaseCloudSync();
-
-  window.addEventListener('online', async () => {
-    updateConnectionStatus('checking');
-    const reachable = await checkInternetAndCloud();
-    if (!reachable) { updateConnectionStatus('offline','Internet is unavailable. Using the cached/local app.'); return; }
-    updateConnectionStatus('online');
-    if (!supabaseUser || !cloudSyncReady) {
-      await initSupabaseCloudSync();
-    } else {
-      await window.saveState();
-      await pullStateFromCloud();
-      showToast('🌐 Connection restored — household sync is active.');
+  if (navigator.onLine) {
+    window.syncOfflineQueues();
+    if (typeof pullStateFromCloud === 'function') {
+      pullStateFromCloud();
     }
-  });
-  window.addEventListener('offline', () => {
-    cloudSyncReady = false;
-    updateConnectionStatus('offline','Internet connection lost. Changes are being saved on this device.');
-    showToast('📴 Offline — changes will stay on this device until you reconnect.');
-  });
+  }
+  
+  const verTag = document.getElementById('headerVersionTag');
+  if (verTag) verTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+  const settingsVerTag = document.getElementById('settingsVersionTag');
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+
+  // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
+  initSupabaseCloudSync();
 });
 </script>
 </body>
