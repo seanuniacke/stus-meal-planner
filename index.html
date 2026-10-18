@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>TEST Meal Planner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script>
   console.log("★★★ SCRIPT IS ACTIVELY RUNNING ★★★");
       // Add this near the top of your main script section
@@ -277,12 +277,13 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
       <div class="header-right-controls">
         <button class="header-shopping-btn" onclick="switchTab('shopping')" title="Open Shopping List">🛒 List</button>
+        <span id="networkStatusBadge" style="font-size:0.66rem;font-weight:800;padding:4px 7px;border-radius:10px;white-space:nowrap;background:#064e3b;color:#34d399;border:1px solid #059669;" title="Network status">● Online</span>
         
         <div class="user-pill-badge-wrap">
-          <span id="activeUserBadge" class="user-pill-badge" onclick="openModal('userProfileModal')">
+          <span id="activeUserBadge" class="user-pill-badge" onclick="window.openUserProfile()">
             <span>👤 Sean</span>
           </span>
-          <span id="headerBellNotif" class="header-bell-badge" onclick="openModal('userProfileModal')" title="Dinner Chef Reminder Active!">🔔</span>
+          <span id="headerBellNotif" class="header-bell-badge" onclick="window.openUserProfile()" title="Dinner Chef Reminder Active!">🔔</span>
         </div>
         
         <button class="btn btn-sm" onclick="openSettings()" title="Settings & Family Hub" style="padding:5px 8px; font-size:0.85rem;">⚙️</button>
@@ -1340,9 +1341,11 @@ console.log("Service worker temporarily disabled for Supabase migration.");
   </div>
 
 <script>
-    // MealFlow application version. Bump only for deliberate releases.
-    window.APP_VERSION = "v0.9.3";
-    localStorage.setItem('stus_app_version', window.APP_VERSION);
+    (function initAppVersion() {
+      const ver = "v0.9.3";
+      localStorage.setItem('stus_app_version', ver);
+      window.APP_VERSION = ver;
+    })();
 
     const userColors = {
       Sean: "var(--user-sean)",
@@ -1549,65 +1552,91 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     function getCloudPayload() { return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
     function persistLocalState(){ localStorage.setItem('stus_pantry_data',JSON.stringify(Store.state.pantryData)); localStorage.setItem('stus_shopping_data',JSON.stringify(Store.state.shoppingData)); localStorage.setItem('stus_calendar_data',JSON.stringify(Store.state.calendarSchedule)); localStorage.setItem('stus_custom_recipes',JSON.stringify(Store.state.customRecipes)); localStorage.setItem('stus_starred_ids',JSON.stringify(Store.state.starredIds)); localStorage.setItem('stus_chat_data',JSON.stringify(Store.state.chatData)); localStorage.setItem('stus_user_settings',JSON.stringify(Store.state.userSettings)); localStorage.setItem('stus_current_profile',Store.state.currentProfile); }
     function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}if(!o.silent)showToast('🔄 Synced with cloud!');} return c; }
-    function updateHouseholdBadge(){const b=document.getElementById('householdSyncBadge'),t=document.getElementById('householdSyncText');if(!b||!t)return;if(cloudSyncReady&&Store.state.householdId){b.textContent='Connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent=`${Store.state.householdName||'Household'} • Shared cloud sync is active.`;}else if(supabaseUser){b.textContent='No household';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Create a household or join one with an invite code.';}else{b.textContent='Not connected';b.style.background='#374151';b.style.color='#d1d5db';t.textContent='Sign in to create or join a shared household.';}}
-    function ensureSupabaseAuthModal(){if(document.getElementById('supabaseAuthModal'))return;const st=document.createElement('style');st.id='supabaseAuthStyles';st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}`;document.head.appendChild(st);const m=document.createElement('div');m.id='supabaseAuthModal';m.innerHTML=`<div id="supabaseAuthCard"><h2>☁️ MealFlow Cloud</h2><p>Sign in to sync your household across devices.</p><input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address"><input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password"><div id="supabaseAuthButtons"><button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button><button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button></div><div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div></div>`;document.body.appendChild(m);const e=()=>document.getElementById('supabaseAuthEmail').value.trim(),pw=()=>document.getElementById('supabaseAuthPassword').value,stt=x=>document.getElementById('supabaseAuthStatus').textContent=x;document.getElementById('supabaseSignInBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password.');stt('Signing in…');const{data,error}=await supabaseClient.auth.signInWithPassword({email:e(),password:pw()});if(error)return stt(error.message);await onSupabaseSignedIn(data.session)};document.getElementById('supabaseSignUpBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password first.');if(pw().length<6)return stt('Password must be at least 6 characters.');stt('Creating account…');const{data,error}=await supabaseClient.auth.signUp({email:e(),password:pw()});if(error)return stt(error.message);if(data.session)await onSupabaseSignedIn(data.session);else stt('Account created. Check your email if confirmation is required.')}}
-    async function onSupabaseSignedIn(session){supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=true;const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();registerPushNotifications().catch(()=>{});showToast(Store.state.householdId?'☁️ Household sync connected':'☁️ Cloud sync connected');}
-    async function initSupabaseCloudSync(){if(!isSupabaseConfigured())return;try{supabaseClient=window.supabase.createClient(CLOUD_SYNC_CONFIG.url,CLOUD_SYNC_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});supabaseClient.auth.onAuthStateChange((ev,se)=>{if(ev==='SIGNED_IN'&&se)setTimeout(()=>onSupabaseSignedIn(se),0);if(ev==='SIGNED_OUT'){cloudSyncReady=false;supabaseUser=null;Store.state.householdId=null;updateHouseholdBadge();}});const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;if(data.session)await onSupabaseSignedIn(data.session);else ensureSupabaseAuthModal();}catch(e){console.error('Supabase initialization error:',e);ensureSupabaseAuthModal();}}
-    async function loadHouseholdMembership(){if(!supabaseUser)return;const{data,error}=await supabaseClient.from('household_members').select('id,household_id,profile_name,email,phone,timezone,push_enabled,notification_day_before,notification_morning_of,households:household_id(id,name,owner_user_id,invite_code)').eq('user_id',supabaseUser.id).maybeSingle();if(error){console.warn('Household lookup:',error.message);return;}if(data){Store.state.householdId=data.household_id;Store.state.householdMemberId=data.id;Store.state.householdName=data.households?.name||'Household';Store.state.householdInviteCode=data.households?.invite_code||'';if(data.profile_name)Store.state.currentProfile=data.profile_name;}}
-    window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();b.innerHTML=`<p>You are connected to <b>${h?.name||Store.state.householdName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${h?.invite_code||'—'}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
-    window.createHousehold=async function(){const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=Math.random().toString(36).slice(2,10).toUpperCase();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
-    window.joinHousehold=async function(){const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data:h,error}=await supabaseClient.from('households').select('id,name,invite_code').eq('invite_code',code).maybeSingle();if(error||!h)return showToast('Invite code not found.');const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:profile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Could not join household: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.currentProfile=profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.name);};
+    function updateNetworkStatus(){
+      const b=document.getElementById('networkStatusBadge');
+      if(!b)return;
+      if(navigator.onLine){b.textContent='● Online';b.style.background='#064e3b';b.style.color='#34d399';b.style.borderColor='#059669';}
+      else{b.textContent='● Offline';b.style.background='#7c2d12';b.style.color='#fdba74';b.style.borderColor='#b45309';}
+    }
+    function updateHouseholdBadge(){const b=document.getElementById('householdSyncBadge'),t=document.getElementById('householdSyncText');if(!b||!t)return;if(cloudSyncReady&&Store.state.householdId){b.textContent='Connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent=`${Store.state.householdName||'Household'} • Shared cloud sync is active.`;}else if(cloudSyncReady&&supabaseUser){b.textContent='Cloud connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent='Personal cloud sync is active for this account.';}else if(supabaseUser&&!navigator.onLine){b.textContent='Offline';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Offline — changes are saved on this device and will sync when you reconnect.';}else if(supabaseUser){b.textContent='No household';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Personal cloud sync is active. Create or join a household for shared features.';}else{b.textContent='Not connected';b.style.background='#374151';b.style.color='#d1d5db';t.textContent='Sign in to sync your personal data across devices.';}}
+    function ensureSupabaseAuthModal(){
+      if(!navigator.onLine)return;
+      if(document.getElementById('supabaseAuthModal')){document.getElementById('supabaseAuthModal').style.display='flex';return;}
+      const st=document.createElement('style');st.id='supabaseAuthStyles';st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}`;document.head.appendChild(st);
+      const m=document.createElement('div');m.id='supabaseAuthModal';
+      m.innerHTML=`<div id="supabaseAuthCard"><h2>☁️ MealFlow Cloud</h2><p>Sign in to sync your personal data across devices. Household sharing is optional.</p><input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address"><input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password"><div id="supabaseAuthButtons"><button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button><button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button></div><div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div></div>`;
+      document.body.appendChild(m);
+      const e=()=>document.getElementById('supabaseAuthEmail').value.trim(),pw=()=>document.getElementById('supabaseAuthPassword').value,stt=x=>document.getElementById('supabaseAuthStatus').textContent=x;
+      document.getElementById('supabaseSignInBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password.');stt('Signing in…');const{data,error}=await supabaseClient.auth.signInWithPassword({email:e(),password:pw()});if(error)return stt(error.message);await onSupabaseSignedIn(data.session)};
+      document.getElementById('supabaseSignUpBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password first.');if(pw().length<6)return stt('Password must be at least 6 characters.');stt('Creating account…');const{data,error}=await supabaseClient.auth.signUp({email:e(),password:pw()});if(error)return stt(error.message);if(data.session)await onSupabaseSignedIn(data.session);else stt('Account created. Check your email if confirmation is required.')};
+    }
+    async function onSupabaseSignedIn(session){
+      supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=true;
+      const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';
+      if(navigator.onLine){await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();}else{updateHouseholdBadge();}
+      if(Store.state.householdId&&navigator.onLine)registerPushNotifications().catch(()=>{});
+      showToast(Store.state.householdId?'☁️ Cloud sync connected':'☁️ Signed in — personal cloud sync is active');
+    }
+    async function initSupabaseCloudSync(){
+      if(!isSupabaseConfigured())return;
+      try{
+        if(!supabaseClient){supabaseClient=window.supabase.createClient(CLOUD_SYNC_CONFIG.url,CLOUD_SYNC_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+          supabaseClient.auth.onAuthStateChange((ev,se)=>{if(ev==='SIGNED_IN'&&se)setTimeout(()=>onSupabaseSignedIn(se),0);if(ev==='SIGNED_OUT'){cloudSyncReady=false;supabaseUser=null;Store.state.householdId=null;if(supabaseChannel){supabaseClient.removeChannel(supabaseChannel);supabaseChannel=null;}updateHouseholdBadge();if(navigator.onLine)ensureSupabaseAuthModal();}});}
+        const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;
+        if(data.session)await onSupabaseSignedIn(data.session);else if(navigator.onLine)ensureSupabaseAuthModal();else updateHouseholdBadge();
+      }catch(e){console.error('Supabase initialization error:',e);if(navigator.onLine)ensureSupabaseAuthModal();else updateHouseholdBadge();}
+    }
+    async function loadHouseholdMembership(){if(!supabaseUser||!navigator.onLine)return;const{data,error}=await supabaseClient.from('household_members').select('id,household_id,profile_name,email,phone,timezone,push_enabled,notification_day_before,notification_morning_of,households:household_id(id,name,owner_user_id,invite_code)').eq('user_id',supabaseUser.id).maybeSingle();if(error){console.warn('Household lookup:',error.message);return;}if(data){Store.state.householdId=data.household_id;Store.state.householdMemberId=data.id;Store.state.householdName=data.households?.name||'Household';Store.state.householdInviteCode=data.households?.invite_code||'';if(data.profile_name)Store.state.currentProfile=data.profile_name;}else{Store.state.householdId=null;Store.state.householdMemberId=null;Store.state.householdName='';Store.state.householdInviteCode='';}}
+    window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();b.innerHTML=`<p>You are connected to <b>${h?.name||Store.state.householdName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${h?.invite_code||'—'}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color)"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
+    window.createHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to create a household.');const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=Math.random().toString(36).slice(2,10).toUpperCase();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
+    window.joinHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to join a household.');const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data:h,error}=await supabaseClient.from('households').select('id,name,invite_code').eq('invite_code',code).maybeSingle();if(error||!h)return showToast('Invite code not found.');const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:profile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Could not join household: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.currentProfile=profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.name);};
     function subscribeToSupabaseChanges(){
-      if(!cloudSyncReady||!supabaseUser||!supabaseClient||supabaseChannel)return;
-      if(Store.state.householdId){
-        supabaseChannel=supabaseClient.channel('mealflow-household-'+Store.state.householdId).on('postgres_changes',{event:'*',schema:'public',table:'household_state',filter:`household_id=eq.${Store.state.householdId}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe(status=>console.log('Supabase realtime:',status));
-      }else{
-        supabaseChannel=supabaseClient.channel('mealflow-user-'+supabaseUser.id).on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:`user_id=eq.${supabaseUser.id}`},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data)}).subscribe(status=>console.log('Supabase realtime:',status));
-      }
+      if(!cloudSyncReady||!supabaseUser||!supabaseClient||!navigator.onLine||supabaseChannel)return;
+      const isHousehold=!!Store.state.householdId;
+      const channelName=isHousehold?'mealflow-household-'+Store.state.householdId:'mealflow-user-'+supabaseUser.id;
+      const table=isHousehold?'household_state':'app_state';
+      const filter=isHousehold?`household_id=eq.${Store.state.householdId}`:`user_id=eq.${supabaseUser.id}`;
+      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data);}).subscribe(status=>{console.log('MealFlow realtime:',status,table);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('MealFlow realtime subscription failed for',table);});
     }
     window.saveState=async function(){
       persistLocalState();
-      if(!cloudSyncReady||!supabaseClient||!supabaseUser||cloudSyncInFlight)return;
+      if(!cloudSyncReady||!supabaseClient||!supabaseUser||!navigator.onLine||cloudSyncInFlight)return;
       cloudSyncInFlight=true;
       try{
         const payload=getCloudPayload();
         if(Store.state.householdId){
           const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:payload,updated_at:payload.updatedAt,updated_by:supabaseUser.id},{onConflict:'household_id'});
           if(error)throw error;
+          console.log('Cloud save: household_state OK');
         }else{
           const{error}=await supabaseClient.from('app_state').upsert({user_id:supabaseUser.id,data:payload,updated_at:payload.updatedAt},{onConflict:'user_id'});
           if(error)throw error;
+          console.log('Cloud save: app_state OK');
         }
-      }catch(e){console.error('Cloud save error:',e)}finally{cloudSyncInFlight=false}
+      }catch(e){console.error('Cloud save error:',e)}finally{cloudSyncInFlight=false;}
     };
     async function pullStateFromCloud(){
-      if(!cloudSyncReady||!supabaseClient||!supabaseUser)return;
+      if(!cloudSyncReady||!supabaseClient||!supabaseUser||!navigator.onLine)return;
       try{
-        let data,error;
         if(Store.state.householdId){
-          ({data,error}=await supabaseClient.from('household_state').select('data,updated_at').eq('household_id',Store.state.householdId).maybeSingle());
+          const{data,error}=await supabaseClient.from('household_state').select('data,updated_at').eq('household_id',Store.state.householdId).maybeSingle();
+          if(error)throw error;
+          if(data?.data)applyCloudState(data.data,{silent:true});else await window.saveState();
+          console.log('Cloud load: household_state OK');
         }else{
-          ({data,error}=await supabaseClient.from('app_state').select('data,updated_at').eq('user_id',supabaseUser.id).maybeSingle());
+          const{data,error}=await supabaseClient.from('app_state').select('data,updated_at').eq('user_id',supabaseUser.id).maybeSingle();
+          if(error)throw error;
+          if(data?.data)applyCloudState(data.data,{silent:true});else await window.saveState();
+          console.log('Cloud load: app_state OK');
         }
-        if(error)throw error;
-        if(data?.data)applyCloudState(data.data,{silent:true});
-        else await window.saveState();
       }catch(e){console.error('Cloud pull error:',e)}
     }
-    window.pushStateToHomeAssistant=async function(customPayload){
-      if(customPayload&&cloudSyncReady&&supabaseClient&&supabaseUser){
-        try{
-          if(Store.state.householdId){
-            const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString(),updated_by:supabaseUser.id},{onConflict:'household_id'});if(error)throw error;
-          }else{
-            const{error}=await supabaseClient.from('app_state').upsert({user_id:supabaseUser.id,data:customPayload,updated_at:customPayload.updatedAt||new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;
-          }
-        }catch(e){console.error('Cloud compatibility push failed:',e)}
-        return;
-      }
-      await window.saveState();
+    window.pushStateToCloud=async function(customPayload){
+      if(!supabaseUser||!supabaseClient||!navigator.onLine)return;
+      const payload=customPayload||getCloudPayload();
+      if(Store.state.householdId){const{error}=await supabaseClient.from('household_state').upsert({household_id:Store.state.householdId,data:payload,updated_at:payload.updatedAt||new Date().toISOString(),updated_by:supabaseUser.id},{onConflict:'household_id'});if(error)console.warn('Cloud save error:',error.message);}
+      else{const{error}=await supabaseClient.from('app_state').upsert({user_id:supabaseUser.id,data:payload,updated_at:payload.updatedAt||new Date().toISOString()},{onConflict:'user_id'});if(error)console.warn('Cloud save error:',error.message);}
     };
-    window.saveHAConfig=function(){showToast('Home Assistant integration has been removed. MealFlow now uses GitHub Pages + Supabase.')};
 
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
     const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'';
@@ -1673,24 +1702,9 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       }
     }
 
-    // ==========================================
-    // Offline changes stay in localStorage and are uploaded on the next cloud save.
+    // Offline changes are kept in localStorage. When signed into a household,
+    // saveState() also writes the shared state to Supabase.
     function queueOfflineAction(actionType,payload){ window.saveState(); }
-    window.syncOfflineQueues=async function(){ if(navigator.onLine) await window.saveState(); };
-     });
-
-// Upgraded online listener that handles both pushing queued offline changes and pulling live updates
-window.addEventListener('online', async () => {
-  showToast("🌐 Connection restored! Syncing devices...");
-  
-  // 1. Send any queued offline actions to your Home Assistant webhook / server
-  if (typeof window.syncOfflineQueues === 'function') {
-    await window.syncOfflineQueues();
-  }
-
-  // 2. Fetch latest changes from your server so desktop updates appear on mobile
-  await pullStateFromCloud();
-});
 
     function getMealAllergyAlerts(meal) {
       const curUser = Store.state.currentProfile;
@@ -1947,6 +1961,86 @@ window.addEventListener('online', async () => {
           </div>
         `).join('');
       }
+    };
+
+    // ==========================================
+    // PERSONAL PROFILE / DIET / ALLERGY MANAGEMENT
+    // This works for standalone users and does not require a household.
+    // ==========================================
+    function getCurrentUserSettings(){
+      const name = Store.state.currentProfile || 'Sean';
+      if (!Store.state.userSettings[name]) {
+        Store.state.userSettings[name] = { allergies: [], dietary: 'None (Standard)', email: '', phone: '' };
+      }
+      return Store.state.userSettings[name];
+    }
+
+    function renderProfileAllergies(){
+      const box = document.getElementById('profileAllergiesList');
+      if (!box) return;
+      const settings = getCurrentUserSettings();
+      const selected = new Set((settings.allergies || []).map(a => String(a).toLowerCase()));
+      const allergies = Array.from(new Set([...(Store.state.masterAllergies || []), ...(settings.allergies || [])]));
+      box.innerHTML = allergies.map(a => {
+        const checked = selected.has(String(a).toLowerCase()) ? 'checked' : '';
+        const safe = String(a).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<label style="display:flex;align-items:center;gap:6px;background:#111827;border:1px solid var(--border-color);border-radius:6px;padding:7px;cursor:pointer;"><input type="checkbox" class="profile-allergy-check" value="${safe}" ${checked}> <span>${a}</span></label>`;
+      }).join('');
+    }
+
+    function populateUserProfileModal(){
+      const settings = getCurrentUserSettings();
+      const title = document.getElementById('profileModalTitle');
+      const dietary = document.getElementById('userDietaryPreferenceSelect');
+      if (title) title.textContent = `👤 ${Store.state.currentProfile || 'User'} Profile`;
+      if (dietary) dietary.value = settings.dietary || 'None (Standard)';
+      renderProfileAllergies();
+      const box = document.getElementById('profileChefNotificationBox');
+      if (box) box.textContent = Store.state.householdId ? 'Household reminders can be shared across your signed-in devices.' : 'Personal meal reminders stay on this device until cloud/household features are enabled.';
+    }
+
+    window.openUserProfile = function(){
+      populateUserProfileModal();
+      openModal('userProfileModal');
+    };
+
+    window.addCustomAllergyProfile = function(){
+      const input = document.getElementById('customAllergyInputProfile');
+      const value = (input?.value || '').trim();
+      if (!value) return;
+      const settings = getCurrentUserSettings();
+      const exists = (settings.allergies || []).some(a => String(a).toLowerCase() === value.toLowerCase());
+      if (!exists) settings.allergies = [...(settings.allergies || []), value];
+      if (!Store.state.masterAllergies.some(a => String(a).toLowerCase() === value.toLowerCase())) Store.state.masterAllergies.push(value);
+      if (input) input.value = '';
+      renderProfileAllergies();
+      showToast(`✓ ${value} added to ${Store.state.currentProfile}'s allergies`);
+    };
+
+    window.saveUserProfileDirect = async function(){
+      const settings = getCurrentUserSettings();
+      const dietary = document.getElementById('userDietaryPreferenceSelect');
+      const checks = Array.from(document.querySelectorAll('.profile-allergy-check:checked'));
+      settings.dietary = dietary?.value || 'None (Standard)';
+      settings.allergies = checks.map(c => c.value);
+      persistLocalState();
+      if (cloudSyncReady && supabaseUser) await window.saveState();
+      closeModal('userProfileModal');
+      if (typeof UI.renderMeals === 'function') UI.renderMeals();
+      showToast(`✓ ${Store.state.currentProfile}'s profile saved`);
+    };
+
+    UI.renderAllergiesProfile = renderProfileAllergies;
+    UI.renderUserManagement = function(){
+      const box = document.getElementById('settingsUsers');
+      if (!box) return;
+      const names = Object.keys(Store.state.userSettings || {});
+      const list = names.map(n => {
+        const u = Store.state.userSettings[n] || {};
+        return `<div class="list-item-row"><div><b>${n}</b><div style="font-size:.72rem;color:var(--text-muted);">${u.dietary || 'None (Standard)'} • ${(u.allergies || []).join(', ') || 'No allergies listed'}</div></div><button class="btn btn-sm btn-blue" onclick="Store.state.currentProfile='${String(n).replace(/'/g,"\\'")}'; window.openUserProfile();">Edit</button></div>`;
+      }).join('');
+      const listTarget = box.querySelector('[data-profile-list]');
+      if (listTarget) listTarget.innerHTML = list;
     };
 
     // ==========================================
@@ -2252,7 +2346,8 @@ window.togglePlannerActionsMenu = function(e) {
   if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 };
 
-   window.addEventListener('online', () => { window.syncOfflineQueues(); });
+   window.addEventListener('online', async () => { updateNetworkStatus(); if (isSupabaseConfigured()) await initSupabaseCloudSync(); if (cloudSyncReady && supabaseUser) { await pullStateFromCloud(); if (!supabaseChannel) subscribeToSupabaseChanges(); } });
+window.addEventListener('offline', () => { updateNetworkStatus(); updateHouseholdBadge(); const m=document.getElementById('supabaseAuthModal'); if(m)m.style.display='none'; });
 
 window.signOutCloudSync = async function() {
   if (supabaseClient) {
@@ -2299,17 +2394,15 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.renderShopping();
   UI.renderFavorites();
   
-  if (navigator.onLine) {
-    window.syncOfflineQueues();
-    if (typeof pullStateFromCloud === 'function') {
-      pullStateFromCloud();
-    }
+  updateNetworkStatus();
+  if (navigator.onLine && cloudSyncReady && supabaseUser) {
+    pullStateFromCloud();
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.3";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "Pro v72.0 Supabase";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.3";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
