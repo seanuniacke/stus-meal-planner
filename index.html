@@ -164,7 +164,9 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       .list-item-controls { width: 100%; justify-content: flex-end; margin-top: 4px; }
     }
     .qty-control { display: inline-flex; align-items: center; gap: 5px; background: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 6px; flex-shrink: 0; }
-    .qty-btn { background: transparent; border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 0.85rem; padding: 0 4px; }
+    .qty-btn { width: 24px; height: 24px; min-width: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 4px; background: #1e293b; color: #fff; font-size: 0.82rem; line-height: 1; font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .qty-btn:active { transform: scale(.94); filter: brightness(1.15); }
+    @media (max-width: 580px) { .qty-btn { width: 26px; height: 26px; min-width: 26px; } }
     .pantry-amount-col { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #162032; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 6px; }
     .pantry-amount-label { font-size: 0.58rem; text-transform: uppercase; font-weight: 800; color: var(--accent-amber); letter-spacing: 0.4px; }
     .pantry-amount-inputs { display: flex; align-items: center; gap: 3px; }
@@ -1359,7 +1361,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.4";
+      const ver = "v0.9.6";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -2487,9 +2489,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.4";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.6";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.4";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.6";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
