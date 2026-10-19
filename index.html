@@ -78,6 +78,25 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       --text-main: #0f172a;
       --text-muted: #475569;
     }
+    body.light-mode .header,
+    body.light-mode .modal-sticky-header,
+    body.light-mode .modal-sticky-footer { background: #e2e8f0 !important; color: #0f172a !important; }
+    body.light-mode .card,
+    body.light-mode .list-item-row,
+    body.light-mode .settings-nav-tile,
+    body.light-mode .meal-card,
+    body.light-mode .cal-day-box,
+    body.light-mode .recipe-ing-card { background: var(--card-bg) !important; color: var(--text-main) !important; }
+    body.light-mode .nav-btn,
+    body.light-mode .pill,
+    body.light-mode .meal-time-btn,
+    body.light-mode .cal-nav-group,
+    body.light-mode .cal-view-group { background: #e2e8f0; color: #0f172a; }
+    body.light-mode input:not([type=checkbox]),
+    body.light-mode select,
+    body.light-mode textarea { background: #fff !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
+    body.light-mode .mobile-bottom-nav { background: #e2e8f0 !important; }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     html, body { max-width: 100vw; overflow-x: hidden; }
     body { 
@@ -851,6 +870,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       </div>
       <div class="modal-sticky-footer">
         <button class="btn btn-sm" onclick="closeModal('userProfileModal')">✕ Close</button>
+        <button class="btn btn-sm btn-red" onclick="signOutCloudSync()">↪ Logout</button>
         <button class="btn btn-green" style="flex:1; margin-left:8px;" onclick="saveUserProfileDirect()">💾 Save Profile</button>
       </div>
     </div>
@@ -1361,7 +1381,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.6";
+      const ver = "v0.9.7";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1667,7 +1687,49 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
     const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'';
     function urlBase64ToUint8Array(x){const p='='.repeat((4-x.length%4)%4),b=(x+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
-    window.registerPushNotifications=async function(){if(!supabaseUser||!Store.state.householdId)return showToast('Join a household first.');if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');if(!PUSH_VAPID_PUBLIC_KEY)return showToast('Push is ready, but the VAPID key still needs to be configured.');try{const reg=await navigator.serviceWorker.register('./sw.js');const perm=await Notification.requestPermission();if(perm!=='granted')return showToast('Notification permission was not granted.');let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});const j=sub.toJSON();const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});if(error)throw error;showToast('🔔 Push notifications enabled')}catch(e){console.error(e);showToast('Could not enable push notifications.')}};
+    window.registerPushNotifications=async function(){if(!supabaseUser)return showToast('Please sign in before enabling push notifications.');if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');if(!PUSH_VAPID_PUBLIC_KEY)return showToast('Push is ready, but the VAPID key still needs to be configured.');try{const reg=await navigator.serviceWorker.register('./sw.js');const perm=await Notification.requestPermission();if(perm!=='granted')return showToast('Notification permission was not granted.');let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});const j=sub.toJSON();const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId||null,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});if(error)throw error;showToast('🔔 Push notifications enabled')}catch(e){console.error(e);showToast('Could not enable push notifications.')}};
+
+    // v0.9.7 interaction repairs: theme, cart summary, exports and honest email status.
+    window.toggleTheme = function(){
+      const light = !document.body.classList.contains('light-mode');
+      document.body.classList.toggle('light-mode', light);
+      try { localStorage.setItem('mealflow_theme', light ? 'light' : 'dark'); } catch(e) {}
+      showToast(light ? '☀️ Light mode enabled' : '🌙 Dark mode enabled');
+    };
+    try { if (localStorage.getItem('mealflow_theme') === 'light') document.body.classList.add('light-mode'); } catch(e) {}
+
+    window.openOrderCartModal = function(){
+      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
+      const count = items.reduce((sum,item)=>sum + Math.max(1,Number(item.qty)||1),0);
+      const countLabel = document.getElementById('orderCartItemCountLabel');
+      const preview = document.getElementById('orderCartItemsPreview');
+      if (countLabel) countLabel.textContent = `${count} ${count === 1 ? 'Item' : 'Items'} to Order`;
+      if (preview) preview.innerHTML = items.length ? items.map(item => `<div style="padding:3px 0;border-bottom:1px solid var(--border-color)">${Math.max(1,Number(item.qty)||1)} × ${String(item.name||item.item||'Unnamed item').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>`).join('') : '<span>Your shopping list is empty. Add items first.</span>';
+      const modal = document.getElementById('orderCartModal');
+      if (modal) modal.style.display = 'flex'; else showToast('Order summary is unavailable. Please refresh the app.');
+    };
+    window.copyShoppingToClipboard = async function(){ return window.exportShoppingList(); };
+    window.exportShoppingList = async function(){
+      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
+      const text = items.length ? 'MealFlow Shopping List\n' + items.map(i=>`${Math.max(1,Number(i.qty)||1)} x ${i.name||i.item||'Unnamed item'}`).join('\n') : 'MealFlow Shopping List\n(empty)';
+      try { await navigator.clipboard.writeText(text); showToast('✓ Shopping list copied to clipboard'); }
+      catch(e) { window.prompt('Copy your shopping list:', text); }
+      return text;
+    };
+    window.exportToStore = async function(store){
+      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
+      if (!items.length) return showToast('Your shopping list is empty.');
+      const text = items.map(i=>`${Math.max(1,Number(i.qty)||1)} x ${i.name||i.item||'Unnamed item'}`).join('\n');
+      try { await navigator.clipboard.writeText(text); } catch(e) {}
+      const urls = {instacart:'https://www.instacart.ca/', walmart:'https://www.walmart.ca/en', superstore:'https://www.realcanadiansuperstore.ca/'};
+      const url = urls[store];
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      showToast('Shopping list copied if permitted. Paste items into the retailer site; checkout is completed there.');
+    };
+    window.sendChefEmailReminder = function(){
+      showToast('Email alerts are not configured yet. A secure email service must be connected before messages can be sent.');
+      console.warn('MealFlow email alert not sent: no email backend is configured.');
+    };
 
     function loadState() {
       try {
@@ -2439,6 +2501,8 @@ window.togglePlannerActionsMenu = function(e) {
 window.addEventListener('offline', () => { updateNetworkStatus(); updateHouseholdBadge(); const m=document.getElementById('supabaseAuthModal'); if(m)m.style.display='none'; });
 
 window.signOutCloudSync = async function() {
+  if (!confirm('Log out of MealFlow on this device?')) return;
+  closeModal('userProfileModal');
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
   }
@@ -2489,9 +2553,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.6";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.7";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.6";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.7";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
