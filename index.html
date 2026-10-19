@@ -167,8 +167,17 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     .qty-btn { background: transparent; border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 0.85rem; padding: 0 4px; }
     .pantry-amount-col { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #162032; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 6px; }
     .pantry-amount-label { font-size: 0.58rem; text-transform: uppercase; font-weight: 800; color: var(--accent-amber); letter-spacing: 0.4px; }
-    .pantry-amount-inputs { display: flex; align-items: center; gap: 3px; }
-    .pantry-manual-input { width: 44px; text-align: center; background: #0f172a; border: 1px solid var(--border-color); color: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 4px; padding: 2px; }
+    .pantry-amount-inputs { display: flex; align-items: center; gap: 4px; }
+    .pantry-manual-input { width: 42px; height: 28px; box-sizing: border-box; text-align: center; background: #0f172a; border: 1px solid var(--border-color); color: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 5px; padding: 2px; }
+    .qty-step-btn { width: 28px; height: 28px; min-width: 28px; padding: 0; border: 1px solid var(--border-color); border-radius: 5px; background: #1e293b; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; line-height: 1; font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .qty-step-btn.qty-plus { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
+    .qty-step-btn:active { transform: scale(.94); filter: brightness(1.15); }
+    .qty-step-btn:focus-visible { outline: 2px solid var(--accent-amber); outline-offset: 1px; }
+    @media (max-width: 580px) {
+      .pantry-amount-inputs { gap: 5px; }
+      .qty-step-btn { width: 30px; height: 30px; min-width: 30px; }
+      .pantry-manual-input { width: 44px; height: 30px; }
+    }
     .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100vw; background: #090d16; border-top: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; height: calc(56px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 1000; box-shadow: 0 -3px 12px rgba(0,0,0,0.6); }
     .mobile-nav-inner { display: flex; width: 100%; justify-content: space-around; align-items: center; height: 100%; padding: 0 2px; }
     .mobile-tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 0.62rem; font-weight: 600; background: transparent; border: none; cursor: pointer; flex: 1; height: 100%; padding: 2px 1px; gap: 2px; min-width: 0; }
@@ -1918,8 +1927,8 @@ console.log("Service worker temporarily disabled for Supabase migration.");
                 <span class="pantry-amount-label">In Pantry</span>
                 <div class="pantry-amount-inputs">
                   <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setPantryManualQty(${idx}, this.value)">
-                  <button class="btn btn-green btn-sm" onclick="window.updateQty('pantry', ${idx}, 1)">+</button>
-                  <button class="btn btn-sm" onclick="window.updateQty('pantry', ${idx}, -1)">-</button>
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase pantry quantity" onclick="window.updateQty('pantry', ${idx}, 1)">+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease pantry quantity" onclick="window.updateQty('pantry', ${idx}, -1)">−</button>
                 </div>
               </div>
               <button class="btn btn-red btn-sm" onclick="window.removeItem('pantry', ${idx})">🗑️</button>
@@ -1941,8 +1950,8 @@ console.log("Service worker temporarily disabled for Supabase migration.");
                 <span class="pantry-amount-label">Qty to Buy</span>
                 <div class="pantry-amount-inputs">
                   <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setShoppingManualQty(${idx}, this.value)">
-                  <button class="btn btn-green btn-sm" onclick="window.updateQty('shop', ${idx}, 1)">+</button>
-                  <button class="btn btn-sm" onclick="window.updateQty('shop', ${idx}, -1)">-</button>
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.updateQty('shop', ${idx}, 1)">+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.updateQty('shop', ${idx}, -1)">−</button>
                 </div>
               </div>
               <button class="btn btn-red btn-sm" onclick="window.removeItem('shop', ${idx})">🗑️</button>
@@ -2357,12 +2366,35 @@ window.autoSyncAllCalendars = function() {
       UI.renderMeals();
     };
 
-window.updateQty = function(type, idx, delta) {
-      const list = type === 'pantry' ? Store.state.pantryData : Store.state.shoppingData;
-      list[idx].qty = Math.max(type === 'shop' ? 1 : 0, (list[idx].qty || 0) + delta);
-      saveState();
-      if (type === 'pantry') UI.renderPantry();
+window.updateQty = async function(type, idx, delta) {
+      const isPantry = type === 'pantry';
+      const list = isPantry ? Store.state.pantryData : Store.state.shoppingData;
+      const item = list[idx];
+      if (!item) return;
+      const current = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
+      const next = Math.max(isPantry ? 0 : 1, current + Number(delta || 0));
+      item.qty = next;
+      if (isPantry) UI.renderPantry();
       else UI.renderShopping();
+      await saveState();
+    };
+
+    window.setPantryManualQty = async function(idx, value) {
+      const item = Store.state.pantryData[idx];
+      if (!item) return;
+      const qty = Math.max(0, parseInt(value, 10) || 0);
+      item.qty = qty;
+      UI.renderPantry();
+      await saveState();
+    };
+
+    window.setShoppingManualQty = async function(idx, value) {
+      const item = Store.state.shoppingData[idx];
+      if (!item) return;
+      const qty = Math.max(1, parseInt(value, 10) || 1);
+      item.qty = qty;
+      UI.renderShopping();
+      await saveState();
     };
 
     window.removeItem = function(type, idx) {
