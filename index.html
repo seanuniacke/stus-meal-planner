@@ -1404,7 +1404,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.8";
+      const ver = "v0.9.9";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1710,9 +1710,32 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     };
 
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
-    const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'';
+    const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'BAwr9S3C_HZXmwcfldHDbJqpxFCajaJyvBsAE8yLDSwZ11oGaKl-IBFqQrJXH3FKxTZn7MNWdTKmzgFA76zqC6g';
     function urlBase64ToUint8Array(x){const p='='.repeat((4-x.length%4)%4),b=(x+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
-    window.registerPushNotifications=async function(){if(!supabaseUser)return showToast('Please sign in before enabling push notifications.');if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');if(!PUSH_VAPID_PUBLIC_KEY)return showToast('Push is ready, but the VAPID key still needs to be configured.');try{const reg=await navigator.serviceWorker.register('./sw.js');const perm=await Notification.requestPermission();if(perm!=='granted')return showToast('Notification permission was not granted.');let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});const j=sub.toJSON();const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId||null,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});if(error)throw error;showToast('🔔 Push notifications enabled')}catch(e){console.error(e);showToast('Could not enable push notifications.')}};
+    window.registerPushNotifications=async function(){
+      if(!supabaseUser)return showToast('Please sign in before enabling push notifications.');
+      if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');
+      try{
+        const reg=await navigator.serviceWorker.register('./sw.js');
+        await navigator.serviceWorker.ready;
+        const perm=await Notification.requestPermission();
+        if(perm!=='granted')return showToast('Notification permission was not granted.');
+        let sub=await reg.pushManager.getSubscription();
+        if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});
+        const j=sub.toJSON();
+        const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId||null,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});
+        if(error)throw error;
+        showToast('🔔 Push enabled. Sending a test notification…');
+        const result=await supabaseClient.functions.invoke('mealflow-notify',{body:{channel:'push',kind:'test',profile:Store.state.currentProfile}});
+        if(result.error)throw result.error;
+        showToast('✓ Push enabled — test notification sent');
+      }catch(e){
+        console.error('Push setup/test error:',e);
+        const msg=String(e?.message||e||'');
+        if(/function|404|failed to send/i.test(msg)) showToast('Push subscription saved, but the MealFlow notification function still needs to be deployed.');
+        else showToast('Could not enable/test push notifications. Check the console for details.');
+      }
+    };
 
     // v0.9.7 interaction repairs: theme, cart summary, exports and honest email status.
     window.toggleTheme = function(){
@@ -1751,9 +1774,20 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
       showToast('Shopping list copied if permitted. Paste items into the retailer site; checkout is completed there.');
     };
-    window.sendChefEmailReminder = function(){
-      showToast('Email alerts are not configured yet. A secure email service must be connected before messages can be sent.');
-      console.warn('MealFlow email alert not sent: no email backend is configured.');
+    window.sendChefEmailReminder = async function(){
+      if(!supabaseUser)return showToast('Please sign in before sending an email alert.');
+      if(!navigator.onLine)return showToast('Email alerts need an internet connection.');
+      try{
+        showToast('✉️ Sending test Chef email…');
+        const result=await supabaseClient.functions.invoke('mealflow-notify',{body:{channel:'email',kind:'test',profile:Store.state.currentProfile}});
+        if(result.error)throw result.error;
+        showToast('✓ Test Chef email sent to your signed-in email address');
+      }catch(e){
+        console.error('Chef email error:',e);
+        const msg=String(e?.message||e||'');
+        if(/function|404|failed to send/i.test(msg)) showToast('Email is wired in the app, but the MealFlow notification function/service still needs to be deployed.');
+        else showToast('Could not send the Chef email. Check the notification function and email service.');
+      }
     };
 
     // ==========================================
@@ -2696,9 +2730,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.7";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.9";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.7";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.9";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
