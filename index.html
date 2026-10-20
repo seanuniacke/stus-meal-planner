@@ -96,6 +96,21 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     body.light-mode select,
     body.light-mode textarea { background: #fff !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
     body.light-mode .mobile-bottom-nav { background: #e2e8f0 !important; }
+    body.light-mode .meal-card,
+    body.light-mode .list-item-row,
+    body.light-mode .cal-day-box,
+    body.light-mode .qty-control,
+    body.light-mode .pantry-amount-col,
+    body.light-mode .planner-actions-menu,
+    body.light-mode .guide-mockup-screen { background: #ffffff !important; color: #0f172a !important; }
+    body.light-mode .list-item-title,
+    body.light-mode .meal-card-body,
+    body.light-mode .cal-meal-line,
+    body.light-mode .cal-day-box,
+    body.light-mode .settings-nav-tile { color: #0f172a !important; }
+    body.light-mode .planner-action-item { color: #0f172a; }
+    body.light-mode .planner-action-item:hover { background: #e2e8f0; }
+    body.light-mode .modal-overlay { background: rgba(15,23,42,.48); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     html, body { max-width: 100vw; overflow-x: hidden; }
@@ -272,6 +287,12 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     @keyframes pulse-red { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
     @media (min-width: 768px) { .top-nav-tabs { display: flex; } .mobile-bottom-nav { display: none; } body { padding-bottom: 0; } }
     @media (max-width: 767px) {
+      .header { padding-top: max(8px, env(safe-area-inset-top, 0px)); padding-left: 8px; padding-right: 8px; }
+      .header-top { flex-wrap: wrap; align-items: center; row-gap: 6px; }
+      .brand { min-width: 0; flex: 1 1 auto; overflow: hidden; }
+      .brand span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+      .header-right-controls { flex: 1 1 100%; width: 100%; min-width: 0; justify-content: space-between; }
+      .header-right-controls > * { flex-shrink: 0; }
       .top-nav-tabs { display: none; }
       .action-btn-row { grid-template-columns: 1fr; }
       .guide-layout { flex-direction: column; height: auto; }
@@ -283,6 +304,8 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       .header-right-controls { gap: 4px; }
       .header-shopping-btn { padding: 5px 7px; font-size: 0.72rem; }
       .user-pill-badge { padding: 4px 7px; font-size: 0.72rem; }
+      .qty-step-btn { width: 24px; height: 24px; min-width: 24px; }
+      .pantry-manual-input { width: 40px; height: 24px; }
     }
   </style>
 </head>
@@ -1381,10 +1404,12 @@ console.log("Service worker temporarily disabled for Supabase migration.");
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.7";
+      const ver = "v0.9.8";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
+
+    let activeCalEditDayIndex = 0;
 
     const userColors = {
       Sean: "var(--user-sean)",
@@ -1731,6 +1756,48 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       console.warn('MealFlow email alert not sent: no email backend is configured.');
     };
 
+    // ==========================================
+    // MASTER USER GUIDE
+    // ==========================================
+    let activeGuideFeatureIndex = 0;
+    let activeGuideSlideIndex = 0;
+
+    function renderGuideFeatureList(filter = '') {
+      const list = document.getElementById('guideSidebarList');
+      if (!list) return;
+      const q = String(filter || '').toLowerCase().trim();
+      const matches = fullMasterGuide.map((f, i) => ({f, i})).filter(x => !q || x.f.title.toLowerCase().includes(q));
+      list.innerHTML = matches.map(x => `<button type="button" onclick="selectGuideFeature(${x.i})" style="text-align:left;padding:8px 9px;border-radius:6px;border:1px solid ${x.i===activeGuideFeatureIndex?'var(--accent-amber)':'var(--border-color)'};background:${x.i===activeGuideFeatureIndex?'#3b2f08':'#0f172a'};color:${x.i===activeGuideFeatureIndex?'var(--accent-amber)':'#fff'};font-size:.72rem;font-weight:700;cursor:pointer;">${x.f.title}</button>`).join('');
+    }
+
+    function renderGuideSlide() {
+      const feature = fullMasterGuide[activeGuideFeatureIndex] || fullMasterGuide[0];
+      const slide = feature.slides[activeGuideSlideIndex] || feature.slides[0];
+      const title = document.getElementById('guideFeatureTitle');
+      const desc = document.getElementById('guideSlideDesc');
+      const counter = document.getElementById('guideSlideCounter');
+      const wire = document.getElementById('guideWireframeContent');
+      const bubbles = document.getElementById('guideBubblesContainer');
+      if (title) title.textContent = feature.title;
+      if (desc) desc.textContent = slide.desc;
+      if (counter) counter.textContent = `Step ${activeGuideSlideIndex + 1} of ${feature.slides.length}`;
+      if (wire) wire.innerHTML = `<div style="height:100%;display:flex;flex-direction:column;gap:10px;justify-content:center;align-items:center;color:#cbd5e1;"><div style="font-size:2.4rem;">🍽️</div><b style="font-size:1rem;color:#fbbf24;">${feature.title}</b><div style="width:78%;height:10px;border-radius:5px;background:#1e293b;"><span style="display:block;width:${(activeGuideSlideIndex+1)*33.33}%;height:100%;background:#f59e0b;border-radius:5px;"></span></div><span style="font-size:.72rem;">MealFlow feature walkthrough</span></div>`;
+      if (bubbles) bubbles.innerHTML = (slide.bubbles || []).map(b => `<div class="guide-highlight-bubble" style="top:${b.top};left:${b.left};">${b.text}</div>`).join('');
+      renderGuideFeatureList(document.getElementById('guideSearchInput')?.value || '');
+    }
+
+    window.selectGuideFeature = function(index) { activeGuideFeatureIndex = Math.max(0, Math.min(index, fullMasterGuide.length - 1)); activeGuideSlideIndex = 0; renderGuideSlide(); };
+    window.changeGuideSlide = function(delta) { activeGuideSlideIndex = Math.max(0, Math.min(activeGuideSlideIndex + Number(delta || 0), (fullMasterGuide[activeGuideFeatureIndex]?.slides.length || 1) - 1)); renderGuideSlide(); };
+    window.filterGuideFeatures = function(value) { renderGuideFeatureList(value); };
+    window.openGuideModal = function() { activeGuideFeatureIndex = 0; activeGuideSlideIndex = 0; const search=document.getElementById('guideSearchInput'); if(search) search.value=''; renderGuideSlide(); openModal('guideModal'); };
+    window.speakGuideSlide = function() {
+      const feature = fullMasterGuide[activeGuideFeatureIndex]; const slide = feature?.slides?.[activeGuideSlideIndex];
+      if (!('speechSynthesis' in window) || !slide) return showToast('Audio reading is not supported by this browser.');
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(`${feature.title}. ${slide.desc}`);
+      window.speechSynthesis.speak(utter);
+    };
+
     function loadState() {
       try {
         const curProf = localStorage.getItem('stus_current_profile');
@@ -2026,15 +2093,26 @@ console.log("Service worker temporarily disabled for Supabase migration.");
       renderCalendar: function(viewMode) {
         const container = document.getElementById('calendarDisplayContainer');
         if (!container) return;
-        container.innerHTML = `<div class="calendar-grid-weekly">${Store.state.calendarSchedule.map((d, i) => `
-          <div class="cal-day-box" onclick="window.openCalDayModal(${i})">
+        const days = Array.isArray(Store.state.calendarSchedule) ? Store.state.calendarSchedule : [];
+        const filtered = Store.state.plannerScheduleOnly ? days.filter(d => d.schedule) : days;
+        if (!filtered.length) { container.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">No planner days are currently available.</div>'; return; }
+        container.innerHTML = `<div class="calendar-grid-weekly">${filtered.map((d) => {
+          const i = days.indexOf(d);
+          const chefColor = getPlannerUserColor(d.chef);
+          const scheduleText = String(d.schedule || '').replace(/•/g,' • ');
+          const attendance = Object.entries(d.attendance || {}).map(([n,v]) => `<span style="color:${getPlannerUserColor(n)};font-weight:800;">${n[0]}:${v==='away'?'Away':'Home'}</span>`).join(' · ');
+          return `<div class="cal-day-box" onclick="window.openCalDayModal(${i})" style="border-top:4px solid ${chefColor};">
             <div>
-              <b style="color:var(--accent-amber);">${d.dayName}</b>
-              <div class="cal-meal-line">🌙 D: ${d.dinner}</div>
-              <div style="font-size:0.7rem; color:var(--accent-purple); margin-top:4px;">👨‍🍳 Chef: ${d.chef}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><b style="color:var(--accent-amber);">${d.dayName}</b><span style="font-size:.62rem;color:${chefColor};font-weight:900;">${d.chef || 'Unassigned'}</span></div>
+              <div class="cal-meal-line" style="margin-top:8px;">🌅 ${d.breakfast || '—'}</div>
+              <div class="cal-meal-line">☀️ ${d.lunch || '—'}</div>
+              <div class="cal-meal-line" style="font-weight:800;">🌙 ${d.dinner || '—'}</div>
+              <div style="font-size:.68rem;color:var(--text-muted);margin-top:7px;line-height:1.4;">${scheduleText || 'No scheduled commitments'}</div>
             </div>
-          </div>
-        `).join('')}</div>`;
+            <div style="margin-top:8px;font-size:.62rem;line-height:1.4;">${attendance || '<span style="color:var(--text-muted);">No attendance set</span>'}</div>
+            ${d.notes ? `<div style="font-size:.65rem;color:var(--accent-amber);margin-top:5px;">📝 ${String(d.notes).slice(0,80)}</div>` : ''}
+          </div>`;
+        }).join('')}</div>`;
       },
       renderChat: function() {
         const list = document.getElementById('commentsList');
@@ -2352,6 +2430,70 @@ window.togglePlannerViewFilter = function() {
   UI.renderCalendar(Store.state.calendarViewMode);
 };
 
+function getPlannerUserColor(name) { return userColors[name] || 'var(--accent-blue)'; }
+
+function parseCalendarEventItem(text, item) {
+  const m = String(text || '').match(/^([^:]+):\s*(.+)$/);
+  if (m && Store.state.userSettings[m[1]]) return { user: m[1], text: m[2] };
+  return { user: item.chef || 'Household', text: String(text || '') };
+}
+
+function renderCalModalAttendanceRow(item) {
+  const row = document.getElementById('calModalAttendanceToggleRow');
+  if (!row) return;
+  const names = Object.keys(Store.state.userSettings || {});
+  row.innerHTML = names.map(name => {
+    const home = (item.attendance?.[name] || 'home') === 'home';
+    const color = getPlannerUserColor(name);
+    return `<button type="button" onclick="toggleDayAttendance('${String(name).replace(/'/g,"\\'")}')" style="border:1px solid ${color};background:${home ? color : '#1e293b'};color:${home ? '#fff' : '#94a3b8'};border-radius:6px;padding:7px 5px;font-size:.72rem;font-weight:800;cursor:pointer;">${home ? '🏠' : '✈️'} ${name}<br><span style="font-size:.62rem;">${home ? 'Home' : 'Away'}</span></button>`;
+  }).join('');
+}
+
+window.toggleDayAttendance = function(name) {
+  const item = Store.state.calendarSchedule[activeCalEditDayIndex]; if (!item) return;
+  if (!item.attendance) item.attendance = {};
+  item.attendance[name] = item.attendance[name] === 'away' ? 'home' : 'away';
+  renderCalModalAttendanceRow(item);
+};
+
+window.saveDayPlan = async function() {
+  const item = Store.state.calendarSchedule[activeCalEditDayIndex]; if (!item) return;
+  item.chef = document.getElementById('calModalChefSelect')?.value || item.chef;
+  item.breakfast = document.getElementById('calModalBreakfastInput')?.value.trim() || '';
+  item.lunch = document.getElementById('calModalLunchInput')?.value.trim() || '';
+  item.dinner = document.getElementById('calModalDinnerInput')?.value.trim() || '';
+  item.snack = document.getElementById('calModalSnackInput')?.value.trim() || '';
+  persistLocalState();
+  await window.saveState();
+  UI.renderCalendar(Store.state.calendarViewMode);
+  closeModal('dayModal');
+  showToast(`✓ ${item.dayName} schedule saved`);
+};
+
+window.saveDayNote = async function() {
+  const item = Store.state.calendarSchedule[activeCalEditDayIndex]; if (!item) return;
+  const input = document.getElementById('calModalNewNoteInput'); const note = input?.value.trim();
+  if (!note) return;
+  item.notes = item.notes ? `${item.notes} • ${note}` : note;
+  if (input) input.value='';
+  const display=document.getElementById('calModalNotesDisplay'); if(display) display.innerText=`Note: "${item.notes}"`;
+  await window.saveState(); showToast('✓ Day note saved');
+};
+
+window.randomizeCurrentDayMeals = function() {
+  const item = Store.state.calendarSchedule[activeCalEditDayIndex]; if (!item) return;
+  const dinners = richOfflineDatabase.filter(m => String(m.time).toLowerCase()==='dinner');
+  const lunches = richOfflineDatabase.filter(m => String(m.time).toLowerCase()==='lunch');
+  const breakfasts = richOfflineDatabase.filter(m => String(m.time).toLowerCase()==='breakfast');
+  if (dinners.length) item.dinner = dinners[Math.floor(Math.random()*dinners.length)].name;
+  if (lunches.length) item.lunch = lunches[Math.floor(Math.random()*lunches.length)].name;
+  if (breakfasts.length) item.breakfast = breakfasts[Math.floor(Math.random()*breakfasts.length)].name;
+  document.getElementById('calModalBreakfastInput').value=item.breakfast||'';
+  document.getElementById('calModalLunchInput').value=item.lunch||'';
+  document.getElementById('calModalDinnerInput').value=item.dinner||'';
+  showToast('🎲 Day meals randomized');
+};
+
 window.openCalDayModal = function(idx) {
   activeCalEditDayIndex = idx;
   const item = Store.state.calendarSchedule[idx];
@@ -2517,6 +2659,7 @@ window.signOutCloudSync = async function() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
+  try { if (localStorage.getItem('mealflow_theme') === 'light') document.body.classList.add('light-mode'); } catch(e) {}
   
   const addInput = document.getElementById('genericAddItemInput');
   if (addInput) {
