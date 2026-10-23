@@ -492,7 +492,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
               </button>
               <div class="planner-actions-menu" id="plannerActionsDropdown">
                 <div class="planner-action-item" onclick="togglePlannerViewFilter(); hidePlannerDropdown();">
-                  <span id="plannerDropdownFilterIcon">👥</span> <span id="plannerDropdownFilterLabel">Family Schedules Only</span>
+                  <span id="plannerDropdownFilterIcon">👥</span> <span id="plannerDropdownFilterLabel">Household Calendars Only</span>
                 </div>
                 <div class="planner-action-item" onclick="autoSyncAllCalendars(); hidePlannerDropdown();">
                   <span>🔄</span> <span>Auto-Sync Live Feeds</span>
@@ -987,16 +987,31 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       </div>
       <div class="modal-scrollable-body">
         <div id="settingsMain">
-          <div style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:12px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <b style="font-size:0.82rem; color:var(--accent-amber);">Current Active User:</b>
+          <div style="background:#0f172a; border:1px solid var(--accent-blue); border-radius:10px; padding:13px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+              <div>
+                <div style="font-size:.68rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;">Signed-in MealFlow account</div>
+                <div id="settingsSignedInName" style="font-size:1.05rem;font-weight:900;color:#fff;margin-top:3px;">User</div>
+                <div id="settingsSignedInEmail" style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">Not signed in</div>
+              </div>
               <span class="version-tag" id="settingsVersionTag">Pro</span>
             </div>
-            <div style="display:flex; gap:6px; margin-top:6px;">
-              <select id="settingsUserSelect" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-weight:700;" onchange="switchUser(this.value)"></select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px;">
+              <button class="btn btn-blue btn-sm" onclick="openUserProfile(); closeModal('settingsModal');">👤 My Profile</button>
+              <button class="btn btn-sm" onclick="toggleTheme()">🌓 Appearance</button>
+              <button class="btn btn-purple btn-sm" onclick="openModal('scheduleImportModal'); closeModal('settingsModal');">📅 Calendar</button>
+              <button class="btn btn-red btn-sm" onclick="signOutCloudSync()">↪ Log Out</button>
             </div>
-            <div style="font-size:.68rem;color:var(--text-muted);margin-top:7px;line-height:1.35;">
-              This is the active MealFlow user on this device. Family members can bookmark the direct List view for quick shopping access.
+            <div style="font-size:.68rem;color:var(--text-muted);margin-top:9px;line-height:1.4;">
+              Your personal profile contains dietary preferences and allergies. Household profiles are managed separately below.
+            </div>
+          </div>
+
+          <div style="background:#0f172a;border:1px solid var(--border-color);border-radius:10px;padding:12px;margin-bottom:14px;">
+            <b style="font-size:.84rem;color:#fff;">🔐 Account & Security</b>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;">
+              <button class="btn btn-sm" onclick="updateMealFlowEmail()">✉️ Change Email</button>
+              <button class="btn btn-sm" onclick="updateMealFlowPassword()">🔑 Change Password</button>
             </div>
           </div>
 
@@ -1462,6 +1477,21 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
             <button class="btn btn-green btn-sm" onclick="document.getElementById('icsFileInput').click()" style="background:#059669; color:#fff;">📥 Upload .ICS File</button>
             <input type="file" id="icsFileInput" style="display:none;" accept=".ics,.ical,text/calendar" onchange="handleICSFileUpload(event)">
           </div>
+        </div>
+
+
+        <div style="background:#0f172a;border:1px solid var(--accent-purple);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <b style="font-size:.85rem;color:var(--accent-purple);">🔗 Personal CalDAV Calendar</b>
+            <span id="caldavStatusBadge" class="badge-tag" style="background:#374151;color:#d1d5db;">Not connected</span>
+          </div>
+          <p style="font-size:.7rem;color:var(--text-muted);line-height:1.45;margin:6px 0 9px;">
+            CalDAV should connect through MealFlow's secure Supabase function. Your calendar password/app password is not saved in this page or local storage.
+          </p>
+          <input id="caldavServerUrl" type="url" placeholder="CalDAV server URL" style="width:100%;padding:8px;margin-bottom:6px;border-radius:6px;background:#1e293b;color:#fff;border:1px solid var(--border-color);">
+          <input id="caldavUsername" type="text" autocomplete="username" placeholder="CalDAV username / email" style="width:100%;padding:8px;margin-bottom:6px;border-radius:6px;background:#1e293b;color:#fff;border:1px solid var(--border-color);">
+          <input id="caldavAppPassword" type="password" autocomplete="new-password" placeholder="App-specific password" style="width:100%;padding:8px;margin-bottom:8px;border-radius:6px;background:#1e293b;color:#fff;border:1px solid var(--border-color);">
+          <button class="btn btn-purple btn-sm" onclick="connectCalDAV()">Test & Connect CalDAV</button>
         </div>
 
         <div id="outlookFeedSyncBox" style="display:none; background:#1e293b; border:1px solid var(--accent-blue); border-radius:8px; padding:10px; margin-bottom:12px;">
@@ -2241,23 +2271,26 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         const container = document.getElementById('calendarDisplayContainer');
         if (!container) return;
         const days = Array.isArray(Store.state.calendarSchedule) ? Store.state.calendarSchedule : [];
-        const filtered = Store.state.plannerScheduleOnly ? days.filter(d => d.schedule) : days;
+        const filtered = days;
         if (!filtered.length) { container.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">No planner days are currently available.</div>'; return; }
         container.innerHTML = `<div class="calendar-grid-weekly">${filtered.map((d) => {
           const i = days.indexOf(d);
           const chefColor = getPlannerUserColor(d.chef);
           const scheduleText = String(d.schedule || '').replace(/•/g,' • ');
           const attendance = Object.entries(d.attendance || {}).map(([n,v]) => `<span style="color:${getPlannerUserColor(n)};font-weight:800;">${n[0]}:${v==='away'?'Away':'Home'}</span>`).join(' · ');
-          return `<div class="cal-day-box" onclick="window.openCalDayModal(${i})" style="border-top:4px solid ${chefColor};">
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><b style="color:var(--accent-amber);">${d.dayName}</b><span style="font-size:.62rem;color:${chefColor};font-weight:900;">${d.chef || 'Unassigned'}</span></div>
+          const meals = Store.state.plannerScheduleOnly ? '' : `
               <div class="cal-meal-line" style="margin-top:8px;">🌅 ${d.breakfast || '—'}</div>
               <div class="cal-meal-line">☀️ ${d.lunch || '—'}</div>
-              <div class="cal-meal-line" style="font-weight:800;">🌙 ${d.dinner || '—'}</div>
-              <div style="font-size:.68rem;color:var(--text-muted);margin-top:7px;line-height:1.4;">${scheduleText || 'No scheduled commitments'}</div>
+              <div class="cal-meal-line" style="font-weight:800;">🌙 ${d.dinner || '—'}</div>`;
+          const chef = Store.state.plannerScheduleOnly ? '<span style="font-size:.62rem;color:var(--text-muted);font-weight:800;">HOUSEHOLD</span>' : `<span style="font-size:.62rem;color:${chefColor};font-weight:900;">${d.chef || 'Unassigned'}</span>`;
+          return `<div class="cal-day-box" onclick="window.openCalDayModal(${i})" style="border-top:4px solid ${chefColor};">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><b style="color:var(--accent-amber);">${d.dayName}</b>${chef}</div>
+              ${meals}
+              <div style="font-size:${Store.state.plannerScheduleOnly ? '.78rem' : '.68rem'};color:${Store.state.plannerScheduleOnly ? 'var(--text-main)' : 'var(--text-muted)'};margin-top:8px;line-height:1.5;">📅 ${scheduleText || 'No scheduled commitments'}</div>
             </div>
-            <div style="margin-top:8px;font-size:.62rem;line-height:1.4;">${attendance || '<span style="color:var(--text-muted);">No attendance set</span>'}</div>
-            ${d.notes ? `<div style="font-size:.65rem;color:var(--accent-amber);margin-top:5px;">📝 ${String(d.notes).slice(0,80)}</div>` : ''}
+            <div style="margin-top:8px;font-size:.65rem;line-height:1.4;">${attendance || '<span style="color:var(--text-muted);">No attendance set</span>'}</div>
+            ${(!Store.state.plannerScheduleOnly && d.notes) ? `<div style="font-size:.65rem;color:var(--accent-amber);margin-top:5px;">📝 ${String(d.notes).slice(0,80)}</div>` : ''}
           </div>`;
         }).join('')}</div>`;
       },
@@ -2350,7 +2383,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       const names = Object.keys(Store.state.userSettings || {});
       const list = names.map(n => {
         const u = Store.state.userSettings[n] || {};
-        return `<div class="list-item-row"><div><b>${n}</b><div style="font-size:.72rem;color:var(--text-muted);">${u.dietary || 'None (Standard)'} • ${(u.allergies || []).join(', ') || 'No allergies listed'}</div></div><button class="btn btn-sm btn-blue" onclick="Store.state.currentProfile='${String(n).replace(/'/g,"\\'")}'; window.openUserProfile();">Edit</button></div>`;
+        return `<div class="list-item-row"><div><b>${n}</b><div style="font-size:.72rem;color:var(--text-muted);">${u.dietary || 'None (Standard)'} • ${(u.allergies || []).join(', ') || 'No allergies listed'}</div></div><button class="btn btn-sm btn-blue" onclick="showToast('Household profile editing is separate from your signed-in personal profile.');">View</button></div>`;
       }).join('');
       const listTarget = box.querySelector('[data-profile-list]');
       if (listTarget) listTarget.innerHTML = list;
@@ -2583,9 +2616,9 @@ window.togglePlannerViewFilter = function() {
   if (Store.state.plannerScheduleOnly) {
     if (label) label.innerText = "Show Full Meal Planner";
     if (icon) icon.innerText = "🍽️";
-    showToast("Switched to Family Schedules Only");
+    showToast("Switched to Household Calendars Only");
   } else {
-    if (label) label.innerText = "Family Schedules Only";
+    if (label) label.innerText = "Household Calendars Only";
     if (icon) icon.innerText = "👥";
     showToast("Switched to Full Meal Planner");
   }
@@ -2775,7 +2808,71 @@ window.updateQty = async function(type, idx, delta) {
 
 
 
+
+function refreshSignedInSettingsIdentity() {
+  const name = (Store.state.currentProfile || 'User');
+  const email = (supabaseUser && supabaseUser.email) ? supabaseUser.email : 'Not signed in';
+  const nameEl = document.getElementById('settingsSignedInName');
+  const emailEl = document.getElementById('settingsSignedInEmail');
+  if (nameEl) nameEl.textContent = name;
+  if (emailEl) emailEl.textContent = email;
+}
+
+window.updateMealFlowEmail = async function() {
+  if (!supabaseClient || !supabaseUser) return showToast('Please sign in first.');
+  const current = supabaseUser.email || '';
+  const next = prompt('Enter your new MealFlow sign-in email:', current);
+  if (!next || next.trim() === current) return;
+  const email = next.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Enter a valid email address.');
+  const { data, error } = await supabaseClient.auth.updateUser({ email });
+  if (error) return showToast('Email update failed: ' + error.message);
+  showToast('✓ Email change requested. Check the new email for confirmation if required.');
+  if (data && data.user) supabaseUser = data.user;
+  refreshSignedInSettingsIdentity();
+};
+
+window.updateMealFlowPassword = async function() {
+  if (!supabaseClient || !supabaseUser) return showToast('Please sign in first.');
+  const next = prompt('Enter a new MealFlow password (minimum 8 characters):');
+  if (!next) return;
+  if (next.length < 8) return showToast('Password must be at least 8 characters.');
+  const confirmPw = prompt('Enter the new password again:');
+  if (next !== confirmPw) return showToast('Passwords did not match.');
+  const { error } = await supabaseClient.auth.updateUser({ password: next });
+  if (error) return showToast('Password update failed: ' + error.message);
+  showToast('✓ MealFlow password updated.');
+};
+
+window.connectCalDAV = async function() {
+  if (!supabaseClient || !supabaseUser) return showToast('Please sign in before connecting CalDAV.');
+  if (!navigator.onLine) return showToast('CalDAV setup needs an internet connection.');
+  const serverUrl = (document.getElementById('caldavServerUrl')?.value || '').trim();
+  const username = (document.getElementById('caldavUsername')?.value || '').trim();
+  const appPassword = document.getElementById('caldavAppPassword')?.value || '';
+  if (!serverUrl || !username || !appPassword) return showToast('Enter the CalDAV server, username and app password.');
+  const badge = document.getElementById('caldavStatusBadge');
+  if (badge) { badge.textContent = 'Testing…'; badge.style.background = '#78350f'; badge.style.color = '#fde68a'; }
+  try {
+    const result = await supabaseClient.functions.invoke('mealflow-caldav', {
+      body: { action:'connect', serverUrl, username, appPassword }
+    });
+    // Clear the password from the browser immediately after the request.
+    const pw = document.getElementById('caldavAppPassword');
+    if (pw) pw.value = '';
+    if (result.error) throw result.error;
+    if (result.data && result.data.error) throw new Error(result.data.error);
+    if (badge) { badge.textContent = 'Connected'; badge.style.background = '#064e3b'; badge.style.color = '#34d399'; }
+    showToast('✓ CalDAV connected. Calendar events can now be synced.');
+  } catch (e) {
+    if (badge) { badge.textContent = 'Backend needed'; badge.style.background = '#7c2d12'; badge.style.color = '#fdba74'; }
+    console.error('CalDAV connection:', e);
+    showToast('CalDAV screen is ready; the secure mealflow-caldav Edge Function still needs to be deployed.');
+  }
+};
+
 window.openSettings = function() {
+  refreshSignedInSettingsIdentity();
   window.openSettingsView('main');
   window.openModal('settingsModal');
 };
@@ -2807,6 +2904,7 @@ window.addEventListener('offline', () => { updateNetworkStatus(); updateHousehol
 window.signOutCloudSync = async function() {
   if (!confirm('Log out of MealFlow on this device?')) return;
   closeModal('userProfileModal');
+  closeModal('settingsModal');
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
   }
