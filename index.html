@@ -323,6 +323,47 @@ body.light-mode .guide-sidebar{background:#f8fafc;}
 body.light-mode .guide-mockup-screen{background:#fff!important;color:#0f172a!important;border-color:#cbd5e1!important;}
 body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!important;}
 @media(max-width:800px){.resource-link-grid{grid-template-columns:1fr}.guide-layout{height:78vh!important;min-height:520px!important;flex-direction:column}.guide-sidebar{width:auto!important;border-right:0!important;border-bottom:1px solid var(--border-color);max-height:190px;padding-right:0;padding-bottom:8px}.guide-content{min-height:360px}.modal-card-adaptive{max-width:96vw!important;}}
+
+/* v1.0.1 mobile header, direct-list routing and light-theme repairs */
+@media (max-width:767px){
+  .header{padding:6px 10px!important;}
+  .header-top{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;}
+  .brand{flex:1 1 auto!important;min-width:0!important;overflow:hidden!important;}
+  .brand span:nth-child(2){font-size:.96rem!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .header-right-controls{flex:0 0 auto!important;width:auto!important;min-width:0!important;justify-content:flex-end!important;gap:7px!important;}
+  .header-right-controls .user-pill-badge-wrap{display:none!important;}
+  .header-shopping-btn{padding:7px 10px!important;font-size:.78rem!important;border-radius:8px!important;}
+  .header-right-controls > .btn{padding:7px 9px!important;font-size:.85rem!important;}
+}
+body.light-mode{background:#f1f5f9!important;color:#0f172a!important;}
+body.light-mode .header{background:#fff!important;color:#0f172a!important;border-bottom-color:#cbd5e1!important;}
+body.light-mode .brand{color:#0f172a!important;}
+body.light-mode .card,body.light-mode .analytics-tile,body.light-mode .mealflow-resource-card,
+body.light-mode .list-item-row,body.light-mode .meal-card,body.light-mode .cal-day-box,
+body.light-mode .settings-nav-tile,body.light-mode .recipe-ing-card{
+  background:#fff!important;color:#0f172a!important;border-color:#cbd5e1!important;
+}
+body.light-mode [style*="background:#0f172a"],body.light-mode [style*="background: #0f172a"],
+body.light-mode [style*="background:#090d16"],body.light-mode [style*="background: #090d16"],
+body.light-mode [style*="background:#1e293b"],body.light-mode [style*="background: #1e293b"]{
+  background:#f8fafc!important;color:#0f172a!important;border-color:#cbd5e1!important;
+}
+body.light-mode [style*="color:#fff"],body.light-mode [style*="color: #fff"],
+body.light-mode [style*="color:#ffffff"],body.light-mode [style*="color: #ffffff"]{color:#0f172a!important;}
+body.light-mode .mobile-bottom-nav{background:#fff!important;border-top-color:#cbd5e1!important;}
+body.light-mode .mobile-tab-btn{color:#475569!important;}
+body.light-mode .mobile-tab-btn.active{color:#c2410c!important;}
+body.light-mode .resource-link{background:#f8fafc!important;color:#0f172a!important;border-color:#cbd5e1!important;}
+body.light-mode .resource-link small{color:#64748b!important;}
+body.light-mode .qty-btn,body.light-mode .qty-step-btn,
+body.light-mode .btn:not(.btn-green):not(.btn-blue):not(.btn-purple):not(.btn-amber):not(.btn-red){
+  background:#e2e8f0!important;color:#0f172a!important;border-color:#cbd5e1!important;
+}
+body.light-mode .header-shopping-btn{background:linear-gradient(135deg,#059669,#10b981)!important;color:#fff!important;border-color:#34d399!important;}
+body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mode textarea{
+  background:#fff!important;color:#0f172a!important;border-color:#94a3b8!important;
+}
+
 </style>
 </head>
 <body>
@@ -368,20 +409,7 @@ body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!im
         <div class="card-title">✨ Meal Ideas</div>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Select category, launch AI Chef, or pick world cravings</p>
 
-        <div class="card mealflow-resource-card" style="margin-top:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div><div class="card-title">📚 MealFlow Recipe & Healthy Living Resources</div><div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">A simple starting library while the full content library is being built.</div></div>
-            <span class="badge-tag badge-cuisine">6 resources</span>
-          </div>
-          <div class="resource-link-grid">
-            <a href="https://www.themealdb.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🍳</span><div><b>TheMealDB</b><small>Recipe ideas & meal inspiration</small></div>↗</a>
-            <a href="https://www.allrecipes.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥘</span><div><b>Allrecipes</b><small>Everyday recipe collection</small></div>↗</a>
-            <a href="https://www.bbcgoodfood.com/recipes" target="_blank" rel="noopener noreferrer" class="resource-link"><span>👨‍🍳</span><div><b>BBC Good Food</b><small>Recipes & cooking guides</small></div>↗</a>
-            <a href="https://food-guide.canada.ca/en/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥦</span><div><b>Canada's Food Guide</b><small>Healthy eating basics</small></div>↗</a>
-            <a href="https://www.heartandstroke.ca/healthy-living/healthy-eating" target="_blank" rel="noopener noreferrer" class="resource-link"><span>❤️</span><div><b>Heart & Stroke</b><small>Healthy eating information</small></div>↗</a>
-            <a href="https://www.eatingwell.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥗</span><div><b>EatingWell</b><small>Healthy recipes & living</small></div>↗</a>
-          </div>
-        </div>
+
 
         <div style="font-size:0.72rem; font-weight:700; margin-top:10px; color:var(--text-muted);">SELECT MEAL TIME:</div>
         <div class="meal-selector">
@@ -421,6 +449,22 @@ body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!im
         </div>
         <div id="mealOptionsGrid" class="grid-cards"></div>
       </div>
+
+      <!-- Resources kept at the bottom of the Ideas page -->
+        <div class="card mealflow-resource-card" style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div><div class="card-title">📚 MealFlow Recipe & Healthy Living Resources</div><div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">A simple starting library while the full content library is being built.</div></div>
+            <span class="badge-tag badge-cuisine">6 resources</span>
+          </div>
+          <div class="resource-link-grid">
+            <a href="https://www.themealdb.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🍳</span><div><b>TheMealDB</b><small>Recipe ideas & meal inspiration</small></div>↗</a>
+            <a href="https://www.allrecipes.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥘</span><div><b>Allrecipes</b><small>Everyday recipe collection</small></div>↗</a>
+            <a href="https://www.bbcgoodfood.com/recipes" target="_blank" rel="noopener noreferrer" class="resource-link"><span>👨‍🍳</span><div><b>BBC Good Food</b><small>Recipes & cooking guides</small></div>↗</a>
+            <a href="https://food-guide.canada.ca/en/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥦</span><div><b>Canada's Food Guide</b><small>Healthy eating basics</small></div>↗</a>
+            <a href="https://www.heartandstroke.ca/healthy-living/healthy-eating" target="_blank" rel="noopener noreferrer" class="resource-link"><span>❤️</span><div><b>Heart & Stroke</b><small>Healthy eating information</small></div>↗</a>
+            <a href="https://www.eatingwell.com/" target="_blank" rel="noopener noreferrer" class="resource-link"><span>🥗</span><div><b>EatingWell</b><small>Healthy recipes & living</small></div>↗</a>
+          </div>
+        </div>
     </div>
 
     <!-- CALENDAR PLANNER -->
@@ -951,6 +995,9 @@ body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!im
             <div style="display:flex; gap:6px; margin-top:6px;">
               <select id="settingsUserSelect" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-weight:700;" onchange="switchUser(this.value)"></select>
             </div>
+            <div style="font-size:.68rem;color:var(--text-muted);margin-top:7px;line-height:1.35;">
+              This is the active MealFlow user on this device. Family members can bookmark the direct List view for quick shopping access.
+            </div>
           </div>
 
           <div id="householdCloudPanel" style="background:#0f172a; border:1px solid var(--accent-purple); border-radius:8px; padding:12px; margin-bottom:14px;">
@@ -962,7 +1009,7 @@ body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!im
             <button class="btn btn-purple btn-sm" onclick="openHouseholdManager()">🏠 Manage Household</button>
           </div>
           <div class="settings-nav-tile" onclick="openGuideModal(); closeModal('settingsModal');" style="border-color:var(--accent-purple);">
-            <div style="font-size:0.88rem; color:#fff; display:flex; align-items:center; gap:8px;"><span>📘</span> <span>Master User Guide (21 Features)</span></div>
+            <div style="font-size:0.88rem; color:#fff; display:flex; align-items:center; gap:8px;"><span>📘</span> <span>Master User Guide (30 Features)</span></div>
             <span style="color:var(--accent-purple);">❯</span>
           </div>
 
@@ -2473,7 +2520,8 @@ window.submitActiveTargetItem = async function() {
       showToast('Custom Family Recipe Saved!');
     };
 
-    window.switchTab = function(tabId) {
+    window.switchTab = function(tabId, options = {}) {
+      if (tabId === 'list') tabId = 'shopping';
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       const target = document.getElementById(`tab-${tabId}`);
       if (target) target.classList.add('active');
@@ -2490,7 +2538,21 @@ window.submitActiveTargetItem = async function() {
       if (tabId === 'pantry') UI.renderPantry();
       if (tabId === 'shopping') UI.renderShopping();
       if (tabId === 'favorites') UI.renderFavorites();
+
+      try { localStorage.setItem('mealflow_last_tab', tabId); } catch(e) {}
+      if (!options.skipHistory) {
+        const route = tabId === 'shopping' ? '#list' : `#${tabId}`;
+        if (location.hash !== route) history.pushState({ mealflowTab: tabId }, '', route);
+      }
     };
+
+    function openMealFlowRouteFromUrl() {
+      const route = (location.hash || '#ideas').replace('#','').toLowerCase();
+      const tab = route === 'list' ? 'shopping' : route;
+      if (document.getElementById(`tab-${tab}`)) switchTab(tab, { skipHistory:true });
+    }
+    window.addEventListener('popstate', openMealFlowRouteFromUrl);
+    window.addEventListener('hashchange', openMealFlowRouteFromUrl);
 
     window.openModal = function(id) { 
       const el = document.getElementById(id);
@@ -2790,6 +2852,14 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.renderShopping();
   UI.renderFavorites();
   setAnalyticsPerson(Store.state.currentProfile && demoAnalyticsByPerson[Store.state.currentProfile] ? Store.state.currentProfile : 'family');
+  try {
+    const route = (location.hash || '').replace('#','').toLowerCase();
+    const saved = localStorage.getItem('mealflow_last_tab') || 'ideas';
+    const requestedTab = route === 'list' ? 'shopping' : (route || saved);
+    if (document.getElementById(`tab-${requestedTab}`)) switchTab(requestedTab, { skipHistory:true });
+    else switchTab('ideas', { skipHistory:true });
+  } catch(e) { switchTab('ideas', { skipHistory:true }); }
+
   
   updateNetworkStatus();
   if (navigator.onLine && cloudSyncReady && supabaseUser) {
