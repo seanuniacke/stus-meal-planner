@@ -1756,7 +1756,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=true;
       const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';
       if(navigator.onLine){await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();}else{updateHouseholdBadge();}
-      if(Store.state.householdId&&navigator.onLine)registerPushNotifications().catch(()=>{});
+      if(Store.state.householdId&&navigator.onLine)ensurePushSubscription().catch(()=>{});
       showToast(Store.state.householdId?'☁️ Cloud sync connected':'☁️ Signed in — personal cloud sync is active');
     }
     async function initSupabaseCloudSync(){
@@ -1830,68 +1830,60 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
     // Web Push registration. VAPID public key will be configured after the Supabase Edge Function is created.
     const PUSH_VAPID_PUBLIC_KEY=window.MEALFLOW_VAPID_PUBLIC_KEY||'BAwr9S3C_HZXmwcfldHDbJqpxFCajaJyvBsAE8yLDSwZ11oGaKl-IBFqQrJXH3FKxTZn7MNWdTKmzgFA76zqC6g';
     function urlBase64ToUint8Array(x){const p='='.repeat((4-x.length%4)%4),b=(x+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
+    // Silent subscription maintenance. Safe on refresh/reconnect/tab restore.
+    // This NEVER sends a notification.
+    async function ensurePushSubscription({requestPermission=false}={}){
+      if(!supabaseUser||!supabaseClient||!navigator.onLine)return null;
+      if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))return null;
+      const reg=await navigator.serviceWorker.register('./sw.js');
+      await navigator.serviceWorker.ready;
+      let perm=Notification.permission;
+      if(perm==='default'&&requestPermission)perm=await Notification.requestPermission();
+      if(perm!=='granted')return null;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub&&requestPermission){
+        sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});
+      }
+      if(!sub)return null;
+      const j=sub.toJSON();
+      const{error}=await supabaseClient.from('push_subscriptions').upsert({
+        user_id:supabaseUser.id,household_id:Store.state.householdId||null,
+        endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,
+        user_agent:navigator.userAgent,enabled:true
+      },{onConflict:'user_id,endpoint'});
+      if(error)throw error;
+      return sub;
+    }
+
     window.registerPushNotifications=async function(){
       if(!supabaseUser)return showToast('Please sign in before enabling push notifications.');
-      if(!('serviceWorker'in navigator)||!('PushManager'in window))return showToast('Push notifications are not supported by this browser.');
       try{
-        const reg=await navigator.serviceWorker.register('./sw.js');
-        await navigator.serviceWorker.ready;
-        const perm=await Notification.requestPermission();
-        if(perm!=='granted')return showToast('Notification permission was not granted.');
-        let sub=await reg.pushManager.getSubscription();
-        if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)});
-        const j=sub.toJSON();
-        const{error}=await supabaseClient.from('push_subscriptions').upsert({user_id:supabaseUser.id,household_id:Store.state.householdId||null,endpoint:sub.endpoint,p256dh:j.keys?.p256dh,auth:j.keys?.auth,user_agent:navigator.userAgent,enabled:true},{onConflict:'user_id,endpoint'});
-        if(error)throw error;
-        showToast('🔔 Push enabled. Sending a test notification…');
-        const result=await supabaseClient.functions.invoke('mealflow-notify',{body:{channel:'push',kind:'test',profile:Store.state.currentProfile}});
-        if(result.error)throw result.error;
-        showToast('✓ Push enabled — test notification sent');
+        const sub=await ensurePushSubscription({requestPermission:true});
+        if(!sub)return showToast(Notification.permission==='denied'?'Notification permission is blocked for MealFlow.':'Notification permission was not granted.');
+        showToast('✓ Push notifications enabled');
       }catch(e){
-        console.error('Push setup/test error:',e);
-        const msg=String(e?.message||e||'');
-        if(/function|404|failed to send/i.test(msg)) showToast('Push subscription saved, but the MealFlow notification function still needs to be deployed.');
-        else showToast('Could not enable/test push notifications. Check the console for details.');
+        console.error('Push setup error:',e);
+        showToast('Could not enable push notifications. Check the console for details.');
       }
     };
 
-    // v0.9.7 interaction repairs: theme, cart summary, exports and honest email status.
-    window.toggleTheme = function(){
-      const light = !document.body.classList.contains('light-mode');
-      document.body.classList.toggle('light-mode', light);
-      try { localStorage.setItem('mealflow_theme', light ? 'light' : 'dark'); } catch(e) {}
-      showToast(light ? '☀️ Light mode enabled' : '🌙 Dark mode enabled');
+    // Explicit test only. Startup, refresh, focus and reconnect never call this.
+    window.sendPushNotification=async function(){
+      if(!supabaseUser)return showToast('Please sign in before sending a test notification.');
+      if(!navigator.onLine)return showToast('Push tests need an internet connection.');
+      try{
+        const sub=await ensurePushSubscription({requestPermission:true});
+        if(!sub)return showToast('Enable push notifications first.');
+        showToast('🔔 Sending test notification…');
+        const result=await supabaseClient.functions.invoke('mealflow-notify',{body:{channel:'push',kind:'test',profile:Store.state.currentProfile}});
+        if(result.error)throw result.error;
+        showToast('✓ Test notification sent');
+      }catch(e){
+        console.error('Push test error:',e);
+        showToast('Could not send the test notification.');
+      }
     };
-    try { if (localStorage.getItem('mealflow_theme') === 'light') document.body.classList.add('light-mode'); } catch(e) {}
 
-    window.openOrderCartModal = function(){
-      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
-      const count = items.reduce((sum,item)=>sum + Math.max(1,Number(item.qty)||1),0);
-      const countLabel = document.getElementById('orderCartItemCountLabel');
-      const preview = document.getElementById('orderCartItemsPreview');
-      if (countLabel) countLabel.textContent = `${count} ${count === 1 ? 'Item' : 'Items'} to Order`;
-      if (preview) preview.innerHTML = items.length ? items.map(item => `<div style="padding:3px 0;border-bottom:1px solid var(--border-color)">${Math.max(1,Number(item.qty)||1)} × ${String(item.name||item.item||'Unnamed item').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>`).join('') : '<span>Your shopping list is empty. Add items first.</span>';
-      const modal = document.getElementById('orderCartModal');
-      if (modal) modal.style.display = 'flex'; else showToast('Order summary is unavailable. Please refresh the app.');
-    };
-    window.copyShoppingToClipboard = async function(){ return window.exportShoppingList(); };
-    window.exportShoppingList = async function(){
-      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
-      const text = items.length ? 'MealFlow Shopping List\n' + items.map(i=>`${Math.max(1,Number(i.qty)||1)} x ${i.name||i.item||'Unnamed item'}`).join('\n') : 'MealFlow Shopping List\n(empty)';
-      try { await navigator.clipboard.writeText(text); showToast('✓ Shopping list copied to clipboard'); }
-      catch(e) { window.prompt('Copy your shopping list:', text); }
-      return text;
-    };
-    window.exportToStore = async function(store){
-      const items = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
-      if (!items.length) return showToast('Your shopping list is empty.');
-      const text = items.map(i=>`${Math.max(1,Number(i.qty)||1)} x ${i.name||i.item||'Unnamed item'}`).join('\n');
-      try { await navigator.clipboard.writeText(text); } catch(e) {}
-      const urls = {instacart:'https://www.instacart.ca/', walmart:'https://www.walmart.ca/en', superstore:'https://www.realcanadiansuperstore.ca/'};
-      const url = urls[store];
-      if (url) window.open(url, '_blank', 'noopener,noreferrer');
-      showToast('Shopping list copied if permitted. Paste items into the retailer site; checkout is completed there.');
-    };
     window.sendChefEmailReminder = async function(){
       if(!supabaseUser)return showToast('Please sign in before sending an email alert.');
       if(!navigator.onLine)return showToast('Email alerts need an internet connection.');
