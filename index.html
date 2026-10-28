@@ -6,6 +6,7 @@
   <title>Stu's Meal Planner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" crossorigin="anonymous"></script>
   <script>
   console.log("★★★ SCRIPT IS ACTIVELY RUNNING ★★★");
       // Add this near the top of your main script section
@@ -564,16 +565,17 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <div class="card-title">📦 Live Pantry Inventory</div>
           <div style="display:flex; gap:5px; flex-wrap:wrap;">
-            <button class="btn btn-blue btn-sm" onclick="togglePantryOCR()">📄 Text / Receipt OCR</button>
-            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload Receipt, Text or Image">📁 Upload File</button>
-            <button class="btn btn-amber btn-sm" onclick="openLiveCameraScanner('pantry')" title="Scan Fridge, Counter or Pantry with Live Camera">📷 AI Camera Scan</button>
+            <button class="btn btn-blue btn-sm" onclick="openReceiptCamera()" title="Photograph a receipt and read its items">📷 Scan Receipt</button>
+            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload a receipt photo or text file">📁 Upload Receipt</button>
+            <button class="btn btn-amber btn-sm" onclick="togglePantryOCR()" title="Paste receipt text manually">📄 Paste Text</button>
             <button class="btn btn-green btn-sm" onclick="openAddItemModal('pantry')">+ Add Item</button>
             <input type="file" id="pantryFileInput" style="display:none;" accept="image/*,.txt,.csv,.json" onchange="handlePantryFileUpload(event)">
+            <input type="file" id="pantryCameraInput" style="display:none;" accept="image/*" capture="environment" onchange="handlePantryFileUpload(event)">
           </div>
         </div>
         
         <div id="pantryOCRBox" style="display:none; background:#0f172a; border:1px dashed var(--border-color); border-radius:8px; padding:12px; margin-bottom:10px;">
-          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Paste Receipt / OCR Ingredients List:</b>
+          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Receipt items — review before importing:</b><div id="pantryOCRStatus" style="font-size:.7rem;color:var(--text-muted);margin-top:4px;"></div>
           <textarea id="pantryOCRText" rows="3" placeholder="Ground Beef, Garlic, Avocado..." style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.78rem;"></textarea>
           <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:6px;">
             <button class="btn btn-sm" style="background:#1e293b;" onclick="togglePantryOCR()">Cancel</button>
@@ -1526,7 +1528,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.10";
+      const ver = "v0.9.11";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -2109,6 +2111,40 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       });
     }
 
+    function ingredientDeficit(ing) {
+      const req = Math.max(0, Number(ing && ing.reqQty) || 1);
+      const pantryItem = findInPantry(ing && ing.name);
+      const has = pantryItem ? Math.max(0, Number(pantryItem.qty) || 0) : 0;
+      return { req, has, deficit: Math.max(0, req - has), pantryItem };
+    }
+
+    function findShoppingMatch(name) {
+      const target = cleanIngName(name);
+      if (!target) return null;
+      return Store.state.shoppingData.find(s => {
+        const sc = cleanIngName(s && s.name);
+        return sc && (sc === target || sc.includes(target) || target.includes(sc));
+      }) || null;
+    }
+
+    function consumeShoppingForPantry(name, addedQty) {
+      let remaining = Math.max(0, Number(addedQty) || 0);
+      if (!remaining) return false;
+      let changed = false;
+      for (let i = Store.state.shoppingData.length - 1; i >= 0 && remaining > 0; i--) {
+        const shop = Store.state.shoppingData[i];
+        const a = cleanIngName(shop && shop.name), b = cleanIngName(name);
+        if (!a || !b || !(a === b || a.includes(b) || b.includes(a))) continue;
+        const q = Math.max(1, Number(shop.qty) || 1);
+        const used = Math.min(q, remaining);
+        remaining -= used;
+        if (q - used <= 0) Store.state.shoppingData.splice(i, 1);
+        else shop.qty = q - used;
+        changed = true;
+      }
+      return changed;
+    }
+
     async function fetchRandomMeals(category, count = 3, targetCuisine = 'All') {
       try {
         const recipes = [];
@@ -2197,12 +2233,10 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       const hasAllergyAlert = allergiesTriggered.length > 0;
 
       let ingHTML = (meal.ingredients || []).slice(0, 6).map(ing => {
-        const inStockItem = findInPantry(ing.name);
-        const req = ing.reqQty || 1;
-        const has = inStockItem ? inStockItem.qty : 0;
-        const inStock = has >= req;
+        const d = ingredientDeficit(ing);
+        const inStock = d.deficit <= 0;
         if (!inStock) missingCount++;
-        return `<div class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">${inStock ? `✓ ${ing.name} (${has})` : `🛒 ${ing.name} (Need +1)`}</div>`;
+        return `<div class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">${inStock ? `✓ ${ing.name} (${d.has}/${d.req})` : `🛒 ${ing.name} — have ${d.has}, need ${d.req} (+${d.deficit})`}</div>`;
       }).join('');
 
       const mealName = meal.name || meal.title;
@@ -2231,7 +2265,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
             <button class="btn btn-purple" style="width:100%;" onclick="window.openRecipeById('${mealId}')">📖 Instructions & Recipe</button>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-amber" style="flex:1;" onclick="window.cookAndDeductLive('${mealId}')">🍳 Cook & Deduct</button>
-              <button class="btn btn-green" style="flex:1;" onclick="window.addMissingToShoppingLive('${mealId}')">+ Shopping List</button>
+              <button class="btn btn-green" style="flex:1;" onclick="window.addMissingToShoppingLive('${mealId}')">🛒 Add Missing Only</button>
             </div>
           </div>
         </div>
@@ -2535,16 +2569,24 @@ window.submitActiveTargetItem = async function() {
         autoReorderDays: null
       });
     }
+    consumeShoppingForPantry(name, qty);
     queueOfflineAction('ADD_PANTRY_ITEM', { name, qty, unit, category: cat });
   } else {
+    const pantryMatch = findInPantry(name);
+    const pantryQty = pantryMatch ? Math.max(0, Number(pantryMatch.qty) || 0) : 0;
+    const qtyToBuy = Math.max(0, qty - pantryQty);
+    if (qtyToBuy <= 0) {
+      showToast(`✓ Already in pantry (${pantryQty}) — not added to shopping list`);
+      return;
+    }
     const existing = Store.state.shoppingData.find(s => s.name.toLowerCase() === name.toLowerCase());
     if (existing) {
-      existing.qty += qty;
+      existing.qty += qtyToBuy;
     } else {
       Store.state.shoppingData.push({ 
         id: createShoppingItemId(),
         name: name, 
-        qty: Math.max(1, qty), 
+        qty: Math.max(1, qtyToBuy), 
         unitWeight: unit, 
         category: cat, 
         cal: "N/A", 
@@ -2553,7 +2595,7 @@ window.submitActiveTargetItem = async function() {
         addedBy: Store.state.currentProfile 
       });
     }
-    queueOfflineAction('ADD_SHOPPING_ITEM', { name, qty, unit, category: cat });
+    queueOfflineAction('ADD_SHOPPING_ITEM', { name, qty: qtyToBuy, unit, category: cat });
   }
 
   // Saves locally and syncs to Supabase when cloud login is connected
@@ -2567,9 +2609,116 @@ window.submitActiveTargetItem = async function() {
     showToast(`Added ${qty}x "${name}" to Pantry Inventory!`);
   } else {
     UI.renderShopping();
-    showToast(`Added ${qty}x "${name}" to Shopping List!`);
+    showToast(`Added ${Math.max(1, qty - (findInPantry(name)?.qty || 0))}x "${name}" to Shopping List!`);
   }
 };
+
+    window.addMissingToShoppingLive = async function(mealId) {
+      const meal = Api.cache[mealId] || richOfflineDatabase.find(m => m.id === mealId);
+      if (!meal) return;
+      let added = 0, updated = 0;
+      (meal.ingredients || []).forEach(ing => {
+        const d = ingredientDeficit(ing);
+        if (d.deficit <= 0) return;
+        const existing = findShoppingMatch(ing.name);
+        if (existing) {
+          // A meal deficit represents the amount still needed after pantry stock.
+          // Never add the pantry-owned amount again; raise the shopping qty only if needed.
+          if ((Number(existing.qty) || 0) < d.deficit) {
+            existing.qty = d.deficit;
+            updated++;
+          }
+        } else {
+          Store.state.shoppingData.push({id:createShoppingItemId(), name:ing.name, qty:d.deficit, unitWeight:ing.unit || 'item', category:'Grocery', addedBy:Store.state.currentProfile, source:'meal-deficit'});
+          added++;
+        }
+      });
+      ensureShoppingItemIds();
+      await saveState();
+      UI.renderShopping();
+      UI.renderMeals();
+      showToast(added || updated ? `🛒 Added only pantry deficits (${added + updated} item${added + updated === 1 ? '' : 's'})` : '✓ Pantry already covers this meal');
+    };
+
+    window.cookAndDeductLive = async function(mealId) {
+      const meal = Api.cache[mealId] || richOfflineDatabase.find(m => m.id === mealId);
+      if (!meal) return;
+      (meal.ingredients || []).forEach(ing => {
+        const p = findInPantry(ing.name);
+        if (p) p.qty = Math.max(0, (Number(p.qty) || 0) - (Number(ing.reqQty) || 1));
+      });
+      await saveState();
+      UI.renderPantry(); UI.renderMeals();
+      showToast('🍳 Pantry updated for this meal');
+    };
+
+    window.togglePantryOCR = function(forceOpen) {
+      const box = document.getElementById('pantryOCRBox');
+      if (!box) return;
+      const open = typeof forceOpen === 'boolean' ? forceOpen : box.style.display === 'none';
+      box.style.display = open ? 'block' : 'none';
+      if (open) setTimeout(() => document.getElementById('pantryOCRText')?.focus(), 50);
+    };
+
+    window.openReceiptCamera = function() {
+      const input = document.getElementById('pantryCameraInput');
+      if (input) input.click();
+    };
+
+    function receiptTextToItems(text) {
+      const ignore = /^(subtotal|total|tax|gst|hst|visa|mastercard|debit|cash|change|balance|receipt|thank|store|date|time|transaction|approved|saving|points|member|www\.|http|tel|phone)/i;
+      const priceEnd = /\s+\$?\d+[.,]\d{2}\s*$/;
+      return String(text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(line => line.replace(priceEnd,'').replace(/^\d+\s*[xX]\s*/,'').trim()).filter(line => line.length > 2 && !ignore.test(line) && /[a-zA-Z]{2}/.test(line)).slice(0,80);
+    }
+
+    window.handlePantryFileUpload = async function(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      window.togglePantryOCR(true);
+      const status = document.getElementById('pantryOCRStatus');
+      const area = document.getElementById('pantryOCRText');
+      try {
+        if (file.type.startsWith('image/')) {
+          if (!window.Tesseract) throw new Error('Receipt OCR library did not load. Check internet access and try again.');
+          if (status) status.textContent = 'Reading receipt photo… this can take 10–30 seconds on a phone.';
+          const result = await Tesseract.recognize(file, 'eng', { logger: m => { if (status && m.status) status.textContent = `${m.status}${m.progress ? ` ${Math.round(m.progress*100)}%` : ''}`; } });
+          const items = receiptTextToItems(result?.data?.text || '');
+          area.value = items.join('\n');
+          if (status) status.textContent = items.length ? `Found ${items.length} possible receipt lines. Remove any non-items, then tap Import to Pantry.` : 'No clear items found. Try a brighter, straighter photo or paste the receipt text.';
+        } else {
+          const raw = await file.text();
+          let items;
+          if (file.name.toLowerCase().endsWith('.json')) {
+            const j = JSON.parse(raw); const arr = Array.isArray(j) ? j : (j.items || []);
+            items = arr.map(x => typeof x === 'string' ? x : (x.name || '')).filter(Boolean);
+          } else items = receiptTextToItems(raw.replace(/,/g,'\n'));
+          area.value = items.join('\n');
+          if (status) status.textContent = `Loaded ${items.length} possible items. Review, then import.`;
+        }
+      } catch (err) {
+        if (status) status.textContent = `Could not read receipt: ${err.message || err}`;
+      } finally { if (event?.target) event.target.value = ''; }
+    };
+
+    window.processPantryOCR = async function() {
+      const area = document.getElementById('pantryOCRText');
+      const items = receiptTextToItems(area?.value || '');
+      if (!items.length) { showToast('No receipt items to import'); return; }
+      let added=0, increased=0, shoppingAdjusted=0;
+      items.forEach(raw => {
+        const m = raw.match(/^(.+?)\s+[xX](\d+)$/);
+        const name = (m ? m[1] : raw).trim();
+        const qty = m ? Math.max(1, parseInt(m[2],10)||1) : 1;
+        const existing = Store.state.pantryData.find(p => cleanIngName(p.name) === cleanIngName(name));
+        if (existing) { existing.qty = (Number(existing.qty)||0) + qty; increased++; }
+        else { Store.state.pantryData.unshift({name,qty,unitWeight:'1 item',cal:'N/A',fat:'N/A',sugar:'N/A',category:'Receipt Import',addedBy:Store.state.currentProfile,isFrequent:false,autoReorderDays:null}); added++; }
+        if (consumeShoppingForPantry(name, qty)) shoppingAdjusted++;
+      });
+      await saveState();
+      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
+      area.value=''; window.togglePantryOCR(false);
+      showToast(`📦 Receipt imported: ${added + increased} pantry items${shoppingAdjusted ? ` • ${shoppingAdjusted} shopping item(s) adjusted` : ''}`);
+    };
 
     window.toggleStarDirect = function(name, elementId) {
       const meal = Api.cache[elementId] || richOfflineDatabase.find(m => m.id === elementId || m.name === name);
@@ -2839,7 +2988,9 @@ window.updateQty = async function(type, idx, delta) {
       if (!item) return;
       const current = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
       item.qty = Math.max(0, current + Number(delta || 0));
-      UI.renderPantry();
+      const increase = Math.max(0, item.qty - current);
+      if (increase) consumeShoppingForPantry(item.name, increase);
+      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
       await saveState();
     };
 
@@ -2855,9 +3006,11 @@ window.updateQty = async function(type, idx, delta) {
     window.setPantryManualQty = async function(idx, value) {
       const item = Store.state.pantryData[idx];
       if (!item) return;
+      const oldQty = Math.max(0, Number(item.qty) || 0);
       const qty = Math.max(0, parseInt(value, 10) || 0);
       item.qty = qty;
-      UI.renderPantry();
+      if (qty > oldQty) consumeShoppingForPantry(item.name, qty - oldQty);
+      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
       await saveState();
     };
 
@@ -3044,9 +3197,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.9";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.11";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.9";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.11";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
