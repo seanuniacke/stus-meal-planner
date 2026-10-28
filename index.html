@@ -1698,8 +1698,8 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         ],
         pantryData: initialRobustPantryData,
         shoppingData: [
-          { name: "White Corn Tortillas", qty: 2, unitWeight: "1 package (12 count)", category: "Grains: Pasta, Rice & Noodles", cal: "110 kcal/portion", fat: "1g", sugar: "0g", addedBy: "Lorna" },
-          { name: "Fresh Cilantro Bunch", qty: 1, unitWeight: "1 fresh bunch", category: "Produce: Fresh Herbs", cal: "5 kcal", fat: "0g", sugar: "0g", addedBy: "Sean" }
+          { id: createShoppingItemId(), name: "White Corn Tortillas", qty: 2, unitWeight: "1 package (12 count)", category: "Grains: Pasta, Rice & Noodles", cal: "110 kcal/portion", fat: "1g", sugar: "0g", addedBy: "Lorna" },
+          { id: createShoppingItemId(), name: "Fresh Cilantro Bunch", qty: 1, unitWeight: "1 fresh bunch", category: "Produce: Fresh Herbs", cal: "5 kcal", fat: "0g", sugar: "0g", addedBy: "Sean" }
         ],
         scannedProducts: [
           { name: "Quebec Pure Maple Syrup (No. 1 Amber)", barcode: "062400118223", origin: "Canada", isCanadian: true, expiry: "2027-10-15", mfg: "Maple Grove Co." },
@@ -1730,10 +1730,32 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 // ==========================================
     // DATA PERSISTENCE & HOUSEHOLD CLOUD SYNC
     // ==========================================
+    function createShoppingItemId() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+      return 'shop_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+    }
+    function ensureShoppingItemIds(list = Store.state.shoppingData) {
+      if (!Array.isArray(list)) return false;
+      let changed = false;
+      const used = new Set();
+      list.forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        let id = typeof item.id === 'string' ? item.id.trim() : '';
+        if (!id || used.has(id)) { item.id = createShoppingItemId(); id = item.id; changed = true; }
+        used.add(id);
+        item.qty = Math.max(1, parseInt(item.qty, 10) || 1);
+      });
+      return changed;
+    }
+    function getShoppingItemById(itemId) {
+      ensureShoppingItemIds();
+      return Store.state.shoppingData.find(item => item && item.id === itemId) || null;
+    }
+
     function isSupabaseConfigured() { return typeof window.supabase !== 'undefined' && SUPABASE_CONFIG_READY; }
-    function getCloudPayload() { return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
+    function getCloudPayload() { ensureShoppingItemIds(); return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
     function persistLocalState(){ localStorage.setItem('stus_pantry_data',JSON.stringify(Store.state.pantryData)); localStorage.setItem('stus_shopping_data',JSON.stringify(Store.state.shoppingData)); localStorage.setItem('stus_calendar_data',JSON.stringify(Store.state.calendarSchedule)); localStorage.setItem('stus_custom_recipes',JSON.stringify(Store.state.customRecipes)); localStorage.setItem('stus_starred_ids',JSON.stringify(Store.state.starredIds)); localStorage.setItem('stus_chat_data',JSON.stringify(Store.state.chatData)); localStorage.setItem('stus_user_settings',JSON.stringify(Store.state.userSettings)); localStorage.setItem('stus_current_profile',Store.state.currentProfile); }
-    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}if(!o.silent)showToast('🔄 Synced with cloud!');} return c; }
+    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){ensureShoppingItemIds();persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}} return c; }
     function updateNetworkStatus(){
       const b=document.getElementById('networkStatusBadge');
       if(!b)return;
@@ -1757,7 +1779,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';
       if(navigator.onLine){await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();}else{updateHouseholdBadge();}
       if(Store.state.householdId&&navigator.onLine)ensurePushSubscription().catch(()=>{});
-      showToast(Store.state.householdId?'☁️ Cloud sync connected':'☁️ Signed in — personal cloud sync is active');
+      // Successful startup/refresh/realtime cloud sync stays silent; errors/status remain available.
     }
     async function initSupabaseCloudSync(){
       if(!isSupabaseConfigured())return;
@@ -1778,7 +1800,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       const channelName=isHousehold?'mealflow-household-'+Store.state.householdId:'mealflow-user-'+supabaseUser.id;
       const table=isHousehold?'household_state':'app_state';
       const filter=isHousehold?`household_id=eq.${Store.state.householdId}`:`user_id=eq.${supabaseUser.id}`;
-      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data);}).subscribe(status=>{
+      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data,{silent:true});}).subscribe(status=>{
         console.log('MealFlow realtime:',status,table);
         if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
           console.warn('MealFlow realtime subscription failed for',table);
@@ -2002,6 +2024,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 
         const shop = localStorage.getItem('stus_shopping_data');
         if (shop) Store.state.shoppingData = JSON.parse(shop);
+        if (ensureShoppingItemIds()) localStorage.setItem('stus_shopping_data', JSON.stringify(Store.state.shoppingData));
 
         const custom = localStorage.getItem('stus_custom_recipes');
         if (custom) {
@@ -2239,8 +2262,11 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       renderShopping: function() {
         const container = document.getElementById('shoppingListGrid');
         if (!container) return;
-        container.innerHTML = Store.state.shoppingData.map((item, idx) => `
-          <div class="list-item-row">
+        ensureShoppingItemIds();
+        container.innerHTML = Store.state.shoppingData.map((item) => {
+          const safeId = JSON.stringify(item.id);
+          return `
+          <div class="list-item-row" data-shopping-id="${item.id}">
             <div class="list-item-title">
               <span>${item.name}</span>
               <span class="badge-tag badge-cuisine">${item.category || 'Grocery'}</span>
@@ -2249,15 +2275,15 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
               <div class="pantry-amount-col">
                 <span class="pantry-amount-label">Qty to Buy</span>
                 <div class="pantry-amount-inputs">
-                  <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setShoppingManualQty(${idx}, this.value)">
-                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.updateQty('shop', ${idx}, 1)">+</button>
-                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.updateQty('shop', ${idx}, -1)">−</button>
+                  <input type="number" min="1" step="1" class="pantry-manual-input" value="${Math.max(1, parseInt(item.qty, 10) || 1)}" onchange='window.setShoppingManualQty(${safeId}, this.value)'>
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick='window.updateShoppingQty(${safeId}, 1)'>+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick='window.updateShoppingQty(${safeId}, -1)'>−</button>
                 </div>
               </div>
-              <button class="btn btn-red btn-sm" onclick="window.removeItem('shop', ${idx})">🗑️</button>
+              <button class="btn btn-red btn-sm" onclick='window.removeShoppingItem(${safeId})'>🗑️</button>
             </div>
-          </div>
-        `).join('');
+          </div>`;
+        }).join('');
       },
       renderCalendar: function(viewMode) {
         const container = document.getElementById('calendarDisplayContainer');
@@ -2469,8 +2495,9 @@ window.submitActiveTargetItem = async function() {
       existing.qty += qty;
     } else {
       Store.state.shoppingData.push({ 
+        id: createShoppingItemId(),
         name: name, 
-        qty: qty, 
+        qty: Math.max(1, qty), 
         unitWeight: unit, 
         category: cat, 
         cal: "N/A", 
@@ -2760,15 +2787,21 @@ window.autoSyncAllCalendars = function() {
     };
 
 window.updateQty = async function(type, idx, delta) {
-      const isPantry = type === 'pantry';
-      const list = isPantry ? Store.state.pantryData : Store.state.shoppingData;
-      const item = list[idx];
+      if (type !== 'pantry') return;
+      const item = Store.state.pantryData[idx];
       if (!item) return;
       const current = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
-      const next = Math.max(isPantry ? 0 : 1, current + Number(delta || 0));
-      item.qty = next;
-      if (isPantry) UI.renderPantry();
-      else UI.renderShopping();
+      item.qty = Math.max(0, current + Number(delta || 0));
+      UI.renderPantry();
+      await saveState();
+    };
+
+    window.updateShoppingQty = async function(itemId, delta) {
+      const item = getShoppingItemById(itemId);
+      if (!item) return;
+      const current = Math.max(1, parseInt(item.qty, 10) || 1);
+      item.qty = Math.max(1, current + (parseInt(delta, 10) || 0));
+      UI.renderShopping();
       await saveState();
     };
 
@@ -2781,21 +2814,28 @@ window.updateQty = async function(type, idx, delta) {
       await saveState();
     };
 
-    window.setShoppingManualQty = async function(idx, value) {
-      const item = Store.state.shoppingData[idx];
+    window.setShoppingManualQty = async function(itemId, value) {
+      const item = getShoppingItemById(itemId);
       if (!item) return;
-      const qty = Math.max(1, parseInt(value, 10) || 1);
-      item.qty = qty;
+      item.qty = Math.max(1, parseInt(value, 10) || 1);
+      UI.renderShopping();
+      await saveState();
+    };
+
+    window.removeShoppingItem = async function(itemId) {
+      ensureShoppingItemIds();
+      const idx = Store.state.shoppingData.findIndex(item => item && item.id === itemId);
+      if (idx < 0) return;
+      Store.state.shoppingData.splice(idx, 1);
       UI.renderShopping();
       await saveState();
     };
 
     window.removeItem = function(type, idx) {
-      const list = type === 'pantry' ? Store.state.pantryData : Store.state.shoppingData;
-      list.splice(idx, 1);
+      if (type !== 'pantry') return;
+      Store.state.pantryData.splice(idx, 1);
       saveState();
-      if (type === 'pantry') UI.renderPantry();
-      else UI.renderShopping();
+      UI.renderPantry();
     };
 
 
