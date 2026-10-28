@@ -1526,7 +1526,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.9";
+      const ver = "v0.9.10";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1621,7 +1621,13 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       { id: "d_4", name: "French-Canadian Tourtière Meat Pie", cuisine: "CANADIAN", time: "Dinner", timeEst: "50 mins", cal: "590 kcal", img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ground Beef", reqQty:1, unit:"lb"}, {name:"Pie Crust", reqQty:2, unit:"sheets"}, {name:"Spices", reqQty:1, unit:"tsp"}], instructions: ["Simmer seasoned ground meat with onions.", "Fill pastry and bake at 375°F until golden."] },
       { id: "d_5", name: "Grilled Western Ribeye Steak", cuisine: "AMERICAN", time: "Dinner", timeEst: "20 mins", cal: "640 kcal", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ribeye Steak", reqQty:2, unit:"steaks"}, {name:"Garlic Butter", reqQty:2, unit:"tbsp"}], instructions: ["Sear on high cast iron skillet 4 mins each side.", "Baste with garlic herb butter."] },
       { id: "d_6", name: "Sizzling Skillet Chicken Fajitas", cuisine: "MEXICAN", time: "Dinner", timeEst: "25 mins", cal: "510 kcal", img: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Chicken Breasts", reqQty:2, unit:"breasts"}, {name:"Bell Peppers", reqQty:2, unit:"sliced"}, {name:"Tortillas", reqQty:6, unit:"count"}], instructions: ["Flash sear sliced chicken strips and bell peppers.", "Serve sizzling with fresh limes and tortillas."] },
-      { id: "d_7", name: "Spanish Paella Valenciana", cuisine: "SPANISH", time: "Dinner", timeEst: "40 mins", cal: "570 kcal", img: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Bomba Rice", reqQty:2, unit:"cups"}, {name:"Shrimp & Chicken", reqQty:1, unit:"lb"}, {name:"Saffron", reqQty:1, unit:"pinch"}], instructions: ["Cook sofrito.", "Add saffron stock and simmer rice without stirring until socarrat forms."] }
+      { id: "d_7", name: "Spanish Paella Valenciana", cuisine: "SPANISH", time: "Dinner", timeEst: "40 mins", cal: "570 kcal", img: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Bomba Rice", reqQty:2, unit:"cups"}, {name:"Shrimp & Chicken", reqQty:1, unit:"lb"}, {name:"Saffron", reqQty:1, unit:"pinch"}], instructions: ["Cook sofrito.", "Add saffron stock and simmer rice without stirring until socarrat forms."] },
+      { id: "s_1", name: "Greek Yogurt Berry & Honey Cup", cuisine: "GREEK", time: "Snack", timeEst: "5 mins", cal: "220 kcal", img: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Greek Yogurt", reqQty:1, unit:"cup"}, {name:"Fresh Berries", reqQty:1, unit:"cup"}, {name:"Honey", reqQty:1, unit:"tbsp"}], instructions: ["Spoon yogurt into a bowl.", "Top with berries and honey."] },
+      { id: "s_2", name: "Apple Slices with Peanut Butter", cuisine: "AMERICAN", time: "Snack", timeEst: "5 mins", cal: "260 kcal", img: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Apples", reqQty:1, unit:"large"}, {name:"Peanut Butter", reqQty:2, unit:"tbsp"}], instructions: ["Slice the apple.", "Serve with peanut butter for dipping."] },
+      { id: "s_3", name: "Maple Cinnamon Oat Bites", cuisine: "CANADIAN", time: "Snack", timeEst: "10 mins", cal: "240 kcal", img: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Rolled Oats", reqQty:1, unit:"cup"}, {name:"Pure Maple Syrup", reqQty:2, unit:"tbsp"}, {name:"Cinnamon", reqQty:1, unit:"tsp"}], instructions: ["Mix oats, maple syrup and cinnamon.", "Form into bite-sized balls and chill."] },
+      { id: "s_4", name: "Tomato Basil Bruschetta", cuisine: "ITALIAN", time: "Snack", timeEst: "10 mins", cal: "210 kcal", img: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Roma Tomatoes", reqQty:2, unit:"diced"}, {name:"Baguette", reqQty:4, unit:"slices"}, {name:"Fresh Basil", reqQty:1, unit:"handful"}], instructions: ["Toast baguette slices.", "Mix tomatoes with basil and olive oil.", "Spoon over toast."] },
+      { id: "s_5", name: "Fresh Veggies with Hummus", cuisine: "MEDITERRANEAN", time: "Snack", timeEst: "5 mins", cal: "190 kcal", img: "https://images.unsplash.com/photo-1577805947697-89e18249d767?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Hummus", reqQty:1, unit:"cup"}, {name:"Carrots", reqQty:2, unit:"count"}, {name:"Bell Peppers", reqQty:1, unit:"count"}], instructions: ["Slice vegetables into sticks.", "Serve with hummus."] },
+      { id: "s_6", name: "Cheese Crackers & Grapes", cuisine: "CANADIAN", time: "Snack", timeEst: "5 mins", cal: "310 kcal", img: "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Cheddar Cheese", reqQty:4, unit:"slices"}, {name:"Crackers", reqQty:8, unit:"count"}, {name:"Grapes", reqQty:1, unit:"cup"}], instructions: ["Arrange cheese, crackers and grapes on a plate.", "Serve immediately."] }
     ];
 
     const masterGuideTitles = [
@@ -2159,14 +2165,23 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
         return `<img src="${mealObj.img || Api.fallbackImg}" alt="${safeAlt}" class="${cls}" referrerpolicy="no-referrer">`;
       },
       fetchDisplayMeals: async function(store) {
-        const mealTime = store.state.activeMealTime;
-        const cuisine = store.state.activeCuisine;
-        const onlineMeals = await fetchRandomMeals(mealTime, 3, cuisine);
-        if (onlineMeals && onlineMeals.length >= 3) {
-          onlineMeals.forEach(m => Api.cache[m.id] = m);
-          return onlineMeals;
+        const mealTime = String(store.state.activeMealTime || 'Dinner');
+        const cuisine = String(store.state.activeCuisine || 'All');
+
+        // Meal type is authoritative. The old online search could return arbitrary
+        // dishes (for example eggplant/ramen) and then label them as Breakfast.
+        const exactMealPool = richOfflineDatabase.filter(
+          m => String(m.time || '').toLowerCase() === mealTime.toLowerCase()
+        );
+
+        let pool = exactMealPool;
+        if (cuisine !== 'All') {
+          const cuisineMatches = exactMealPool.filter(
+            m => String(m.cuisine || '').toLowerCase() === cuisine.toLowerCase()
+          );
+          if (cuisineMatches.length) pool = cuisineMatches;
         }
-        let pool = richOfflineDatabase.filter(m => m.time.toLowerCase() === mealTime.toLowerCase());
+
         const shuffled = [...pool].sort(() => 0.5 - Math.random());
         shuffled.forEach(m => Api.cache[m.id] = m);
         return shuffled.slice(0, 3);
@@ -2227,10 +2242,17 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       renderMeals: async function() {
         const grid = document.getElementById('mealOptionsGrid');
         if (!grid) return;
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--accent-amber); font-weight: bold;">👨‍🍳 Fetching recipes & photos...</div>`;
+        const requestedMealTime = Store.state.activeMealTime;
+        const requestedCuisine = Store.state.activeCuisine;
+        const requestId = (UI._mealRenderRequestId || 0) + 1;
+        UI._mealRenderRequestId = requestId;
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--accent-amber); font-weight: bold;">👨‍🍳 Loading ${requestedMealTime} ideas...</div>`;
         const selectedMeals = await Api.fetchDisplayMeals(Store);
+        if (requestId !== UI._mealRenderRequestId || requestedMealTime !== Store.state.activeMealTime || requestedCuisine !== Store.state.activeCuisine) return;
         Store.state.displayedMeals = selectedMeals;
-        grid.innerHTML = selectedMeals.map(m => buildMealCardMarkup(m, false)).join('');
+        grid.innerHTML = selectedMeals.length
+          ? selectedMeals.map(m => buildMealCardMarkup(m, false)).join('')
+          : `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);">No ${requestedMealTime.toLowerCase()} ideas found for this filter.</div>`;
       },
       renderFavorites: function() {
         const container = document.getElementById('favoritesGrid');
