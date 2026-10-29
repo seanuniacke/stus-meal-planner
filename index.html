@@ -6,7 +6,6 @@
   <title>Stu's Meal Planner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" crossorigin="anonymous"></script>
   <script>
   console.log("★★★ SCRIPT IS ACTIVELY RUNNING ★★★");
       // Add this near the top of your main script section
@@ -365,16 +364,6 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
   background:#fff!important;color:#0f172a!important;border-color:#94a3b8!important;
 }
 
-
-/* Shopping add-item quantity control: clean buttons, no browser number spinner */
-.add-item-qty-control{display:grid;grid-template-columns:38px minmax(52px,1fr) 38px;align-items:center;gap:7px;width:100%;padding:4px;background:#111827;border:1px solid var(--border-color);border-radius:8px;}
-.add-item-qty-btn{width:38px;height:34px;border:1px solid #475569;border-radius:7px;background:#263449;color:#fff;font-size:1.15rem;font-weight:900;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
-.add-item-qty-btn.plus{background:var(--accent-green);border-color:var(--accent-green);}
-.add-item-qty-btn:hover{filter:brightness(1.12)} .add-item-qty-btn:active{transform:scale(.95)}
-.add-item-qty-input{width:100%;height:34px;text-align:center;background:#0f172a;color:#fff;border:1px solid #475569;border-radius:7px;font-weight:800;font-size:.95rem;padding:0 4px;appearance:textfield;-moz-appearance:textfield;}
-.add-item-qty-input::-webkit-outer-spin-button,.add-item-qty-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-mode .add-item-qty-input{background:#fff!important;color:#0f172a!important} body.light-mode .add-item-qty-btn:not(.plus){background:#e2e8f0!important;color:#0f172a!important;}
-
 </style>
 </head>
 <body>
@@ -565,17 +554,16 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <div class="card-title">📦 Live Pantry Inventory</div>
           <div style="display:flex; gap:5px; flex-wrap:wrap;">
-            <button class="btn btn-blue btn-sm" onclick="openReceiptCamera()" title="Photograph a receipt and read its items">📷 Scan Receipt</button>
-            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload a receipt photo or text file">📁 Upload Receipt</button>
-            <button class="btn btn-amber btn-sm" onclick="togglePantryOCR()" title="Paste receipt text manually">📄 Paste Text</button>
+            <button class="btn btn-blue btn-sm" onclick="togglePantryOCR()">📄 Text / Receipt OCR</button>
+            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload Receipt, Text or Image">📁 Upload File</button>
+            <button class="btn btn-amber btn-sm" onclick="openLiveCameraScanner('pantry')" title="Scan Fridge, Counter or Pantry with Live Camera">📷 AI Camera Scan</button>
             <button class="btn btn-green btn-sm" onclick="openAddItemModal('pantry')">+ Add Item</button>
             <input type="file" id="pantryFileInput" style="display:none;" accept="image/*,.txt,.csv,.json" onchange="handlePantryFileUpload(event)">
-            <input type="file" id="pantryCameraInput" style="display:none;" accept="image/*" capture="environment" onchange="handlePantryFileUpload(event)">
           </div>
         </div>
         
         <div id="pantryOCRBox" style="display:none; background:#0f172a; border:1px dashed var(--border-color); border-radius:8px; padding:12px; margin-bottom:10px;">
-          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Receipt items — review before importing:</b><div id="pantryOCRStatus" style="font-size:.7rem;color:var(--text-muted);margin-top:4px;"></div>
+          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Paste Receipt / OCR Ingredients List:</b>
           <textarea id="pantryOCRText" rows="3" placeholder="Ground Beef, Garlic, Avocado..." style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.78rem;"></textarea>
           <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:6px;">
             <button class="btn btn-sm" style="background:#1e293b;" onclick="togglePantryOCR()">Cancel</button>
@@ -1252,10 +1240,10 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
             </div>
             <div>
               <label style="font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Quantity:</label>
-              <div class="add-item-qty-control">
-                <button class="add-item-qty-btn" type="button" aria-label="Decrease quantity" onclick="window.adjustAddQty(-1)">−</button>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" id="addItemQtyInput" class="add-item-qty-input" value="1" aria-label="Quantity" onchange="window.normalizeAddQty()" onblur="window.normalizeAddQty()">
-                <button class="add-item-qty-btn plus" type="button" aria-label="Increase quantity" onclick="window.adjustAddQty(1)">+</button>
+              <div class="qty-control" style="width:100%; justify-content:space-between;">
+                <button class="qty-btn" type="button" onclick="adjustAddQty(-1)">-</button>
+                <input type="number" id="addItemQtyInput" value="1" min="1" style="width:45px; text-align:center; background:transparent; color:#fff; border:none; font-weight:bold;">
+                <button class="qty-btn" type="button" onclick="adjustAddQty(1)">+</button>
               </div>
             </div>
           </div>
@@ -1528,10 +1516,23 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.11";
+      const ver = "v0.9.12";
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
+
+    // Security helpers. Browser-side code is public; these are defensive hardening measures.
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[ch]));
+    }
+
+    // Casual source/interaction deterrent only — not a security boundary.
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      const k = String(e.key || '').toUpperCase();
+      if ((e.ctrlKey || e.metaKey) && k === 'U') e.preventDefault();
+    });
+
 
     let activeCalEditDayIndex = 0;
 
@@ -1623,13 +1624,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       { id: "d_4", name: "French-Canadian Tourtière Meat Pie", cuisine: "CANADIAN", time: "Dinner", timeEst: "50 mins", cal: "590 kcal", img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ground Beef", reqQty:1, unit:"lb"}, {name:"Pie Crust", reqQty:2, unit:"sheets"}, {name:"Spices", reqQty:1, unit:"tsp"}], instructions: ["Simmer seasoned ground meat with onions.", "Fill pastry and bake at 375°F until golden."] },
       { id: "d_5", name: "Grilled Western Ribeye Steak", cuisine: "AMERICAN", time: "Dinner", timeEst: "20 mins", cal: "640 kcal", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ribeye Steak", reqQty:2, unit:"steaks"}, {name:"Garlic Butter", reqQty:2, unit:"tbsp"}], instructions: ["Sear on high cast iron skillet 4 mins each side.", "Baste with garlic herb butter."] },
       { id: "d_6", name: "Sizzling Skillet Chicken Fajitas", cuisine: "MEXICAN", time: "Dinner", timeEst: "25 mins", cal: "510 kcal", img: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Chicken Breasts", reqQty:2, unit:"breasts"}, {name:"Bell Peppers", reqQty:2, unit:"sliced"}, {name:"Tortillas", reqQty:6, unit:"count"}], instructions: ["Flash sear sliced chicken strips and bell peppers.", "Serve sizzling with fresh limes and tortillas."] },
-      { id: "d_7", name: "Spanish Paella Valenciana", cuisine: "SPANISH", time: "Dinner", timeEst: "40 mins", cal: "570 kcal", img: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Bomba Rice", reqQty:2, unit:"cups"}, {name:"Shrimp & Chicken", reqQty:1, unit:"lb"}, {name:"Saffron", reqQty:1, unit:"pinch"}], instructions: ["Cook sofrito.", "Add saffron stock and simmer rice without stirring until socarrat forms."] },
-      { id: "s_1", name: "Greek Yogurt Berry & Honey Cup", cuisine: "GREEK", time: "Snack", timeEst: "5 mins", cal: "220 kcal", img: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Greek Yogurt", reqQty:1, unit:"cup"}, {name:"Fresh Berries", reqQty:1, unit:"cup"}, {name:"Honey", reqQty:1, unit:"tbsp"}], instructions: ["Spoon yogurt into a bowl.", "Top with berries and honey."] },
-      { id: "s_2", name: "Apple Slices with Peanut Butter", cuisine: "AMERICAN", time: "Snack", timeEst: "5 mins", cal: "260 kcal", img: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Apples", reqQty:1, unit:"large"}, {name:"Peanut Butter", reqQty:2, unit:"tbsp"}], instructions: ["Slice the apple.", "Serve with peanut butter for dipping."] },
-      { id: "s_3", name: "Maple Cinnamon Oat Bites", cuisine: "CANADIAN", time: "Snack", timeEst: "10 mins", cal: "240 kcal", img: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Rolled Oats", reqQty:1, unit:"cup"}, {name:"Pure Maple Syrup", reqQty:2, unit:"tbsp"}, {name:"Cinnamon", reqQty:1, unit:"tsp"}], instructions: ["Mix oats, maple syrup and cinnamon.", "Form into bite-sized balls and chill."] },
-      { id: "s_4", name: "Tomato Basil Bruschetta", cuisine: "ITALIAN", time: "Snack", timeEst: "10 mins", cal: "210 kcal", img: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Roma Tomatoes", reqQty:2, unit:"diced"}, {name:"Baguette", reqQty:4, unit:"slices"}, {name:"Fresh Basil", reqQty:1, unit:"handful"}], instructions: ["Toast baguette slices.", "Mix tomatoes with basil and olive oil.", "Spoon over toast."] },
-      { id: "s_5", name: "Fresh Veggies with Hummus", cuisine: "MEDITERRANEAN", time: "Snack", timeEst: "5 mins", cal: "190 kcal", img: "https://images.unsplash.com/photo-1577805947697-89e18249d767?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Hummus", reqQty:1, unit:"cup"}, {name:"Carrots", reqQty:2, unit:"count"}, {name:"Bell Peppers", reqQty:1, unit:"count"}], instructions: ["Slice vegetables into sticks.", "Serve with hummus."] },
-      { id: "s_6", name: "Cheese Crackers & Grapes", cuisine: "CANADIAN", time: "Snack", timeEst: "5 mins", cal: "310 kcal", img: "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Cheddar Cheese", reqQty:4, unit:"slices"}, {name:"Crackers", reqQty:8, unit:"count"}, {name:"Grapes", reqQty:1, unit:"cup"}], instructions: ["Arrange cheese, crackers and grapes on a plate.", "Serve immediately."] }
+      { id: "d_7", name: "Spanish Paella Valenciana", cuisine: "SPANISH", time: "Dinner", timeEst: "40 mins", cal: "570 kcal", img: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Bomba Rice", reqQty:2, unit:"cups"}, {name:"Shrimp & Chicken", reqQty:1, unit:"lb"}, {name:"Saffron", reqQty:1, unit:"pinch"}], instructions: ["Cook sofrito.", "Add saffron stock and simmer rice without stirring until socarrat forms."] }
     ];
 
     const masterGuideTitles = [
@@ -1716,8 +1711,8 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
         ],
         pantryData: initialRobustPantryData,
         shoppingData: [
-          { id: createShoppingItemId(), name: "White Corn Tortillas", qty: 2, unitWeight: "1 package (12 count)", category: "Grains: Pasta, Rice & Noodles", cal: "110 kcal/portion", fat: "1g", sugar: "0g", addedBy: "Lorna" },
-          { id: createShoppingItemId(), name: "Fresh Cilantro Bunch", qty: 1, unitWeight: "1 fresh bunch", category: "Produce: Fresh Herbs", cal: "5 kcal", fat: "0g", sugar: "0g", addedBy: "Sean" }
+          { name: "White Corn Tortillas", qty: 2, unitWeight: "1 package (12 count)", category: "Grains: Pasta, Rice & Noodles", cal: "110 kcal/portion", fat: "1g", sugar: "0g", addedBy: "Lorna" },
+          { name: "Fresh Cilantro Bunch", qty: 1, unitWeight: "1 fresh bunch", category: "Produce: Fresh Herbs", cal: "5 kcal", fat: "0g", sugar: "0g", addedBy: "Sean" }
         ],
         scannedProducts: [
           { name: "Quebec Pure Maple Syrup (No. 1 Amber)", barcode: "062400118223", origin: "Canada", isCanadian: true, expiry: "2027-10-15", mfg: "Maple Grove Co." },
@@ -1748,32 +1743,10 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
 // ==========================================
     // DATA PERSISTENCE & HOUSEHOLD CLOUD SYNC
     // ==========================================
-    function createShoppingItemId() {
-      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
-      return 'shop_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
-    }
-    function ensureShoppingItemIds(list = Store.state.shoppingData) {
-      if (!Array.isArray(list)) return false;
-      let changed = false;
-      const used = new Set();
-      list.forEach(item => {
-        if (!item || typeof item !== 'object') return;
-        let id = typeof item.id === 'string' ? item.id.trim() : '';
-        if (!id || used.has(id)) { item.id = createShoppingItemId(); id = item.id; changed = true; }
-        used.add(id);
-        item.qty = Math.max(1, parseInt(item.qty, 10) || 1);
-      });
-      return changed;
-    }
-    function getShoppingItemById(itemId) {
-      ensureShoppingItemIds();
-      return Store.state.shoppingData.find(item => item && item.id === itemId) || null;
-    }
-
     function isSupabaseConfigured() { return typeof window.supabase !== 'undefined' && SUPABASE_CONFIG_READY; }
-    function getCloudPayload() { ensureShoppingItemIds(); return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
+    function getCloudPayload() { return { pantry:Store.state.pantryData, shopping:Store.state.shoppingData, calendar:Store.state.calendarSchedule, customRecipes:Store.state.customRecipes, starredIds:Store.state.starredIds, chat:Store.state.chatData, userSettings:Store.state.userSettings, currentProfile:Store.state.currentProfile, updatedAt:new Date().toISOString() }; }
     function persistLocalState(){ localStorage.setItem('stus_pantry_data',JSON.stringify(Store.state.pantryData)); localStorage.setItem('stus_shopping_data',JSON.stringify(Store.state.shoppingData)); localStorage.setItem('stus_calendar_data',JSON.stringify(Store.state.calendarSchedule)); localStorage.setItem('stus_custom_recipes',JSON.stringify(Store.state.customRecipes)); localStorage.setItem('stus_starred_ids',JSON.stringify(Store.state.starredIds)); localStorage.setItem('stus_chat_data',JSON.stringify(Store.state.chatData)); localStorage.setItem('stus_user_settings',JSON.stringify(Store.state.userSettings)); localStorage.setItem('stus_current_profile',Store.state.currentProfile); }
-    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){ensureShoppingItemIds();persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}} return c; }
+    function applyCloudState(d,o={}){ if(!d)return false; let c=false; const a=(k,t)=>{if(Array.isArray(d[k])&&JSON.stringify(d[k])!==JSON.stringify(Store.state[t])){Store.state[t]=d[k];c=true;}}; a('shopping','shoppingData');a('pantry','pantryData');a('calendar','calendarSchedule');a('customRecipes','customRecipes');a('starredIds','starredIds');a('chat','chatData'); if(d.userSettings){Store.state.userSettings=d.userSettings;c=true;} if(d.currentProfile){Store.state.currentProfile=d.currentProfile;c=true;} if(c){persistLocalState();if(typeof UI!=='undefined'){if(UI.renderShopping)UI.renderShopping();if(UI.renderPantry)UI.renderPantry();if(UI.renderCalendar)UI.renderCalendar(Store.state.calendarViewMode);if(UI.renderFavorites)UI.renderFavorites();if(UI.renderChat)UI.renderChat();}if(!o.silent)showToast('🔄 Synced with cloud!');} return c; }
     function updateNetworkStatus(){
       const b=document.getElementById('networkStatusBadge');
       if(!b)return;
@@ -1797,7 +1770,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';
       if(navigator.onLine){await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();}else{updateHouseholdBadge();}
       if(Store.state.householdId&&navigator.onLine)ensurePushSubscription().catch(()=>{});
-      // Successful startup/refresh/realtime cloud sync stays silent; errors/status remain available.
+      showToast(Store.state.householdId?'☁️ Cloud sync connected':'☁️ Signed in — personal cloud sync is active');
     }
     async function initSupabaseCloudSync(){
       if(!isSupabaseConfigured())return;
@@ -1809,16 +1782,22 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       }catch(e){console.error('Supabase initialization error:',e);if(navigator.onLine)ensureSupabaseAuthModal();else updateHouseholdBadge();}
     }
     async function loadHouseholdMembership(){if(!supabaseUser||!navigator.onLine)return;const{data,error}=await supabaseClient.from('household_members').select('id,household_id,profile_name,email,phone,timezone,push_enabled,notification_day_before,notification_morning_of,households:household_id(id,name,owner_user_id,invite_code)').eq('user_id',supabaseUser.id).maybeSingle();if(error){console.warn('Household lookup:',error.message);return;}if(data){Store.state.householdId=data.household_id;Store.state.householdMemberId=data.id;Store.state.householdName=data.households?.name||'Household';Store.state.householdInviteCode=data.households?.invite_code||'';if(data.profile_name)Store.state.currentProfile=data.profile_name;}else{Store.state.householdId=null;Store.state.householdMemberId=null;Store.state.householdName='';Store.state.householdInviteCode='';}}
-    window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();b.innerHTML=`<p>You are connected to <b>${h?.name||Store.state.householdName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${h?.invite_code||'—'}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color)"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
-    window.createHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to create a household.');const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=Math.random().toString(36).slice(2,10).toUpperCase();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
-    window.joinHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to join a household.');const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');const{data:h,error}=await supabaseClient.from('households').select('id,name,invite_code').eq('invite_code',code).maybeSingle();if(error||!h)return showToast('Invite code not found.');const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:profile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Could not join household: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.currentProfile=profile;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+h.name);};
+    window.openHouseholdManager=async function(){if(!supabaseUser){ensureSupabaseAuthModal();return;}let p=document.getElementById('householdManagerModal');if(!p){p=document.createElement('div');p.id='householdManagerModal';p.className='modal-overlay';p.innerHTML=`<div class="card modal-card-adaptive" style="max-width:480px"><div class="modal-sticky-header"><div class="card-title">🏠 Household</div><button class="btn btn-sm" onclick="closeModal('householdManagerModal')">✕</button></div><div class="modal-scrollable-body"><div id="householdManagerBody"></div></div></div>`;document.body.appendChild(p)}const b=document.getElementById('householdManagerBody');if(Store.state.householdId){const{data:h}=await supabaseClient.from('households').select('name,invite_code').eq('id',Store.state.householdId).single();const safeName=escapeHtml(h?.name||Store.state.householdName||'Household');const safeCode=escapeHtml(h?.invite_code||Store.state.householdInviteCode||'—');b.innerHTML=`<p>You are connected to <b>${safeName}</b>.</p><div style="background:#0f172a;padding:12px;border-radius:8px"><small>Household invite code</small><div style="font-size:1.4rem;font-weight:800;letter-spacing:3px">${safeCode}</div><small>Share this code with another household member.</small></div>`;}else{b.innerHTML=`<div style="background:#0f172a;padding:12px;border-radius:8px"><b>Create a new household</b><input id="newHouseholdName" placeholder="e.g. Uniacke Family" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px"><button class="btn btn-green" style="width:100%;margin-top:8px" onclick="createHousehold()">Create Household</button></div><div style="text-align:center;margin:10px;color:#94a3b8">— or —</div><div style="background:#0f172a;padding:12px;border-radius:8px"><b>Join an existing household</b><input id="joinHouseholdCode" maxlength="12" placeholder="Invite code" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color);border-radius:6px;text-transform:uppercase"><input id="joinProfileName" maxlength="40" placeholder="Your household profile name" style="width:100%;margin-top:8px;padding:9px;background:#1e293b;color:#fff;border:1px solid var(--border-color)"><button class="btn btn-purple" style="width:100%;margin-top:8px" onclick="joinHousehold()">Join Household</button></div>`;}p.style.display='flex';};
+    function generateInviteCode(){
+      const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const bytes=new Uint8Array(12);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');
+    }
+    window.createHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to create a household.');const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My Household';const code=generateInviteCode();const{data:h,error}=await supabaseClient.from('households').insert({name,owner_user_id:supabaseUser.id,invite_code:code}).select().single();if(error)return showToast('Could not create household: '+error.message);const{data:m,error:me}=await supabaseClient.from('household_members').insert({household_id:h.id,user_id:supabaseUser.id,profile_name:Store.state.currentProfile,email:supabaseUser.email||''}).select().single();if(me)return showToast('Member setup failed: '+me.message);Store.state.householdId=h.id;Store.state.householdMemberId=m.id;Store.state.householdName=h.name;Store.state.householdInviteCode=h.invite_code;await window.saveState();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Household created and synced');};
+    window.joinHousehold=async function(){if(!supabaseUser||!navigator.onLine)return showToast('You need an internet connection to join a household.');const code=(document.getElementById('joinHouseholdCode')?.value||'').trim().toUpperCase();const profile=(document.getElementById('joinProfileName')?.value||'').trim()||Store.state.currentProfile;if(!code)return showToast('Enter the invite code.');if(!/^[A-Z0-9]{4,12}$/.test(code))return showToast('Enter a valid invite code.');const{data,error}=await supabaseClient.rpc('join_household_by_invite',{p_invite_code:code,p_profile_name:profile});if(error)return showToast(/not found/i.test(error.message||'')?'Invite code not found.':'Could not join household: '+error.message);const row=Array.isArray(data)?data[0]:data;if(!row)return showToast('Could not join household.');Store.state.householdId=row.household_id;Store.state.householdMemberId=row.member_id;Store.state.householdName=row.household_name;Store.state.householdInviteCode=row.invite_code;Store.state.currentProfile=row.profile_name;await pullStateFromCloud();updateHouseholdBadge();closeModal('householdManagerModal');subscribeToSupabaseChanges();showToast('🏠 Joined '+row.household_name);};
     function subscribeToSupabaseChanges(){
       if(!cloudSyncReady||!supabaseUser||!supabaseClient||!navigator.onLine||supabaseChannel)return;
       const isHousehold=!!Store.state.householdId;
       const channelName=isHousehold?'mealflow-household-'+Store.state.householdId:'mealflow-user-'+supabaseUser.id;
       const table=isHousehold?'household_state':'app_state';
       const filter=isHousehold?`household_id=eq.${Store.state.householdId}`:`user_id=eq.${supabaseUser.id}`;
-      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data,{silent:true});}).subscribe(status=>{
+      supabaseChannel=supabaseClient.channel(channelName).on('postgres_changes',{event:'*',schema:'public',table,filter},p=>{if(p.eventType!=='DELETE'&&p.new?.data)applyCloudState(p.new.data);}).subscribe(status=>{
         console.log('MealFlow realtime:',status,table);
         if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
           console.warn('MealFlow realtime subscription failed for',table);
@@ -2042,7 +2021,6 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
 
         const shop = localStorage.getItem('stus_shopping_data');
         if (shop) Store.state.shoppingData = JSON.parse(shop);
-        if (ensureShoppingItemIds()) localStorage.setItem('stus_shopping_data', JSON.stringify(Store.state.shoppingData));
 
         const custom = localStorage.getItem('stus_custom_recipes');
         if (custom) {
@@ -2111,40 +2089,6 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       });
     }
 
-    function ingredientDeficit(ing) {
-      const req = Math.max(0, Number(ing && ing.reqQty) || 1);
-      const pantryItem = findInPantry(ing && ing.name);
-      const has = pantryItem ? Math.max(0, Number(pantryItem.qty) || 0) : 0;
-      return { req, has, deficit: Math.max(0, req - has), pantryItem };
-    }
-
-    function findShoppingMatch(name) {
-      const target = cleanIngName(name);
-      if (!target) return null;
-      return Store.state.shoppingData.find(s => {
-        const sc = cleanIngName(s && s.name);
-        return sc && (sc === target || sc.includes(target) || target.includes(sc));
-      }) || null;
-    }
-
-    function consumeShoppingForPantry(name, addedQty) {
-      let remaining = Math.max(0, Number(addedQty) || 0);
-      if (!remaining) return false;
-      let changed = false;
-      for (let i = Store.state.shoppingData.length - 1; i >= 0 && remaining > 0; i--) {
-        const shop = Store.state.shoppingData[i];
-        const a = cleanIngName(shop && shop.name), b = cleanIngName(name);
-        if (!a || !b || !(a === b || a.includes(b) || b.includes(a))) continue;
-        const q = Math.max(1, Number(shop.qty) || 1);
-        const used = Math.min(q, remaining);
-        remaining -= used;
-        if (q - used <= 0) Store.state.shoppingData.splice(i, 1);
-        else shop.qty = q - used;
-        changed = true;
-      }
-      return changed;
-    }
-
     async function fetchRandomMeals(category, count = 3, targetCuisine = 'All') {
       try {
         const recipes = [];
@@ -2201,23 +2145,14 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
         return `<img src="${mealObj.img || Api.fallbackImg}" alt="${safeAlt}" class="${cls}" referrerpolicy="no-referrer">`;
       },
       fetchDisplayMeals: async function(store) {
-        const mealTime = String(store.state.activeMealTime || 'Dinner');
-        const cuisine = String(store.state.activeCuisine || 'All');
-
-        // Meal type is authoritative. The old online search could return arbitrary
-        // dishes (for example eggplant/ramen) and then label them as Breakfast.
-        const exactMealPool = richOfflineDatabase.filter(
-          m => String(m.time || '').toLowerCase() === mealTime.toLowerCase()
-        );
-
-        let pool = exactMealPool;
-        if (cuisine !== 'All') {
-          const cuisineMatches = exactMealPool.filter(
-            m => String(m.cuisine || '').toLowerCase() === cuisine.toLowerCase()
-          );
-          if (cuisineMatches.length) pool = cuisineMatches;
+        const mealTime = store.state.activeMealTime;
+        const cuisine = store.state.activeCuisine;
+        const onlineMeals = await fetchRandomMeals(mealTime, 3, cuisine);
+        if (onlineMeals && onlineMeals.length >= 3) {
+          onlineMeals.forEach(m => Api.cache[m.id] = m);
+          return onlineMeals;
         }
-
+        let pool = richOfflineDatabase.filter(m => m.time.toLowerCase() === mealTime.toLowerCase());
         const shuffled = [...pool].sort(() => 0.5 - Math.random());
         shuffled.forEach(m => Api.cache[m.id] = m);
         return shuffled.slice(0, 3);
@@ -2233,10 +2168,12 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       const hasAllergyAlert = allergiesTriggered.length > 0;
 
       let ingHTML = (meal.ingredients || []).slice(0, 6).map(ing => {
-        const d = ingredientDeficit(ing);
-        const inStock = d.deficit <= 0;
+        const inStockItem = findInPantry(ing.name);
+        const req = ing.reqQty || 1;
+        const has = inStockItem ? inStockItem.qty : 0;
+        const inStock = has >= req;
         if (!inStock) missingCount++;
-        return `<div class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">${inStock ? `✓ ${ing.name} (${d.has}/${d.req})` : `🛒 ${ing.name} — have ${d.has}, need ${d.req} (+${d.deficit})`}</div>`;
+        return `<div class="ing-badge ${inStock ? 'ing-in-stock' : 'ing-missing'}">${inStock ? `✓ ${ing.name} (${has})` : `🛒 ${ing.name} (Need +1)`}</div>`;
       }).join('');
 
       const mealName = meal.name || meal.title;
@@ -2265,7 +2202,7 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
             <button class="btn btn-purple" style="width:100%;" onclick="window.openRecipeById('${mealId}')">📖 Instructions & Recipe</button>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-amber" style="flex:1;" onclick="window.cookAndDeductLive('${mealId}')">🍳 Cook & Deduct</button>
-              <button class="btn btn-green" style="flex:1;" onclick="window.addMissingToShoppingLive('${mealId}')">🛒 Add Missing Only</button>
+              <button class="btn btn-green" style="flex:1;" onclick="window.addMissingToShoppingLive('${mealId}')">+ Shopping List</button>
             </div>
           </div>
         </div>
@@ -2276,17 +2213,10 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       renderMeals: async function() {
         const grid = document.getElementById('mealOptionsGrid');
         if (!grid) return;
-        const requestedMealTime = Store.state.activeMealTime;
-        const requestedCuisine = Store.state.activeCuisine;
-        const requestId = (UI._mealRenderRequestId || 0) + 1;
-        UI._mealRenderRequestId = requestId;
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--accent-amber); font-weight: bold;">👨‍🍳 Loading ${requestedMealTime} ideas...</div>`;
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--accent-amber); font-weight: bold;">👨‍🍳 Fetching recipes & photos...</div>`;
         const selectedMeals = await Api.fetchDisplayMeals(Store);
-        if (requestId !== UI._mealRenderRequestId || requestedMealTime !== Store.state.activeMealTime || requestedCuisine !== Store.state.activeCuisine) return;
         Store.state.displayedMeals = selectedMeals;
-        grid.innerHTML = selectedMeals.length
-          ? selectedMeals.map(m => buildMealCardMarkup(m, false)).join('')
-          : `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);">No ${requestedMealTime.toLowerCase()} ideas found for this filter.</div>`;
+        grid.innerHTML = selectedMeals.map(m => buildMealCardMarkup(m, false)).join('');
       },
       renderFavorites: function() {
         const container = document.getElementById('favoritesGrid');
@@ -2328,11 +2258,8 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
       renderShopping: function() {
         const container = document.getElementById('shoppingListGrid');
         if (!container) return;
-        ensureShoppingItemIds();
-        container.innerHTML = Store.state.shoppingData.map((item) => {
-          const safeId = JSON.stringify(item.id);
-          return `
-          <div class="list-item-row" data-shopping-id="${item.id}">
+        container.innerHTML = Store.state.shoppingData.map((item, idx) => `
+          <div class="list-item-row">
             <div class="list-item-title">
               <span>${item.name}</span>
               <span class="badge-tag badge-cuisine">${item.category || 'Grocery'}</span>
@@ -2341,15 +2268,15 @@ body.light-mode .add-item-qty-control{background:#f8fafc!important} body.light-m
               <div class="pantry-amount-col">
                 <span class="pantry-amount-label">Qty to Buy</span>
                 <div class="pantry-amount-inputs">
-                  <input type="number" min="1" step="1" class="pantry-manual-input" value="${Math.max(1, parseInt(item.qty, 10) || 1)}" onchange='window.setShoppingManualQty(${safeId}, this.value)'>
-                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick='window.updateShoppingQty(${safeId}, 1)'>+</button>
-                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick='window.updateShoppingQty(${safeId}, -1)'>−</button>
+                  <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setShoppingManualQty(${idx}, this.value)">
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.updateQty('shop', ${idx}, 1)">+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.updateQty('shop', ${idx}, -1)">−</button>
                 </div>
               </div>
-              <button class="btn btn-red btn-sm" onclick='window.removeShoppingItem(${safeId})'>🗑️</button>
+              <button class="btn btn-red btn-sm" onclick="window.removeItem('shop', ${idx})">🗑️</button>
             </div>
-          </div>`;
-        }).join('');
+          </div>
+        `).join('');
       },
       renderCalendar: function(viewMode) {
         const container = document.getElementById('calendarDisplayContainer');
@@ -2520,21 +2447,6 @@ window.handleSmartFoodInput = function(value) {
   select.value = category;
 };
 
-window.normalizeAddQty = function() {
-  const input = document.getElementById('addItemQtyInput');
-  if (!input) return 1;
-  const qty = Math.max(1, parseInt(String(input.value).replace(/\D/g, ''), 10) || 1);
-  input.value = qty;
-  return qty;
-};
-
-window.adjustAddQty = function(delta) {
-  const input = document.getElementById('addItemQtyInput');
-  if (!input) return;
-  const current = Math.max(1, parseInt(String(input.value).replace(/\D/g, ''), 10) || 1);
-  input.value = Math.max(1, current + (parseInt(delta, 10) || 0));
-};
-
 window.submitActiveTargetItem = async function() {
   console.log("=== SUBMIT ACTIVE TARGET ITEM STARTED ===");
   const nameInput = document.getElementById('genericAddItemInput');
@@ -2569,24 +2481,15 @@ window.submitActiveTargetItem = async function() {
         autoReorderDays: null
       });
     }
-    consumeShoppingForPantry(name, qty);
     queueOfflineAction('ADD_PANTRY_ITEM', { name, qty, unit, category: cat });
   } else {
-    const pantryMatch = findInPantry(name);
-    const pantryQty = pantryMatch ? Math.max(0, Number(pantryMatch.qty) || 0) : 0;
-    const qtyToBuy = Math.max(0, qty - pantryQty);
-    if (qtyToBuy <= 0) {
-      showToast(`✓ Already in pantry (${pantryQty}) — not added to shopping list`);
-      return;
-    }
     const existing = Store.state.shoppingData.find(s => s.name.toLowerCase() === name.toLowerCase());
     if (existing) {
-      existing.qty += qtyToBuy;
+      existing.qty += qty;
     } else {
       Store.state.shoppingData.push({ 
-        id: createShoppingItemId(),
         name: name, 
-        qty: Math.max(1, qtyToBuy), 
+        qty: qty, 
         unitWeight: unit, 
         category: cat, 
         cal: "N/A", 
@@ -2595,7 +2498,7 @@ window.submitActiveTargetItem = async function() {
         addedBy: Store.state.currentProfile 
       });
     }
-    queueOfflineAction('ADD_SHOPPING_ITEM', { name, qty: qtyToBuy, unit, category: cat });
+    queueOfflineAction('ADD_SHOPPING_ITEM', { name, qty, unit, category: cat });
   }
 
   // Saves locally and syncs to Supabase when cloud login is connected
@@ -2609,116 +2512,9 @@ window.submitActiveTargetItem = async function() {
     showToast(`Added ${qty}x "${name}" to Pantry Inventory!`);
   } else {
     UI.renderShopping();
-    showToast(`Added ${Math.max(1, qty - (findInPantry(name)?.qty || 0))}x "${name}" to Shopping List!`);
+    showToast(`Added ${qty}x "${name}" to Shopping List!`);
   }
 };
-
-    window.addMissingToShoppingLive = async function(mealId) {
-      const meal = Api.cache[mealId] || richOfflineDatabase.find(m => m.id === mealId);
-      if (!meal) return;
-      let added = 0, updated = 0;
-      (meal.ingredients || []).forEach(ing => {
-        const d = ingredientDeficit(ing);
-        if (d.deficit <= 0) return;
-        const existing = findShoppingMatch(ing.name);
-        if (existing) {
-          // A meal deficit represents the amount still needed after pantry stock.
-          // Never add the pantry-owned amount again; raise the shopping qty only if needed.
-          if ((Number(existing.qty) || 0) < d.deficit) {
-            existing.qty = d.deficit;
-            updated++;
-          }
-        } else {
-          Store.state.shoppingData.push({id:createShoppingItemId(), name:ing.name, qty:d.deficit, unitWeight:ing.unit || 'item', category:'Grocery', addedBy:Store.state.currentProfile, source:'meal-deficit'});
-          added++;
-        }
-      });
-      ensureShoppingItemIds();
-      await saveState();
-      UI.renderShopping();
-      UI.renderMeals();
-      showToast(added || updated ? `🛒 Added only pantry deficits (${added + updated} item${added + updated === 1 ? '' : 's'})` : '✓ Pantry already covers this meal');
-    };
-
-    window.cookAndDeductLive = async function(mealId) {
-      const meal = Api.cache[mealId] || richOfflineDatabase.find(m => m.id === mealId);
-      if (!meal) return;
-      (meal.ingredients || []).forEach(ing => {
-        const p = findInPantry(ing.name);
-        if (p) p.qty = Math.max(0, (Number(p.qty) || 0) - (Number(ing.reqQty) || 1));
-      });
-      await saveState();
-      UI.renderPantry(); UI.renderMeals();
-      showToast('🍳 Pantry updated for this meal');
-    };
-
-    window.togglePantryOCR = function(forceOpen) {
-      const box = document.getElementById('pantryOCRBox');
-      if (!box) return;
-      const open = typeof forceOpen === 'boolean' ? forceOpen : box.style.display === 'none';
-      box.style.display = open ? 'block' : 'none';
-      if (open) setTimeout(() => document.getElementById('pantryOCRText')?.focus(), 50);
-    };
-
-    window.openReceiptCamera = function() {
-      const input = document.getElementById('pantryCameraInput');
-      if (input) input.click();
-    };
-
-    function receiptTextToItems(text) {
-      const ignore = /^(subtotal|total|tax|gst|hst|visa|mastercard|debit|cash|change|balance|receipt|thank|store|date|time|transaction|approved|saving|points|member|www\.|http|tel|phone)/i;
-      const priceEnd = /\s+\$?\d+[.,]\d{2}\s*$/;
-      return String(text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(line => line.replace(priceEnd,'').replace(/^\d+\s*[xX]\s*/,'').trim()).filter(line => line.length > 2 && !ignore.test(line) && /[a-zA-Z]{2}/.test(line)).slice(0,80);
-    }
-
-    window.handlePantryFileUpload = async function(event) {
-      const file = event?.target?.files?.[0];
-      if (!file) return;
-      window.togglePantryOCR(true);
-      const status = document.getElementById('pantryOCRStatus');
-      const area = document.getElementById('pantryOCRText');
-      try {
-        if (file.type.startsWith('image/')) {
-          if (!window.Tesseract) throw new Error('Receipt OCR library did not load. Check internet access and try again.');
-          if (status) status.textContent = 'Reading receipt photo… this can take 10–30 seconds on a phone.';
-          const result = await Tesseract.recognize(file, 'eng', { logger: m => { if (status && m.status) status.textContent = `${m.status}${m.progress ? ` ${Math.round(m.progress*100)}%` : ''}`; } });
-          const items = receiptTextToItems(result?.data?.text || '');
-          area.value = items.join('\n');
-          if (status) status.textContent = items.length ? `Found ${items.length} possible receipt lines. Remove any non-items, then tap Import to Pantry.` : 'No clear items found. Try a brighter, straighter photo or paste the receipt text.';
-        } else {
-          const raw = await file.text();
-          let items;
-          if (file.name.toLowerCase().endsWith('.json')) {
-            const j = JSON.parse(raw); const arr = Array.isArray(j) ? j : (j.items || []);
-            items = arr.map(x => typeof x === 'string' ? x : (x.name || '')).filter(Boolean);
-          } else items = receiptTextToItems(raw.replace(/,/g,'\n'));
-          area.value = items.join('\n');
-          if (status) status.textContent = `Loaded ${items.length} possible items. Review, then import.`;
-        }
-      } catch (err) {
-        if (status) status.textContent = `Could not read receipt: ${err.message || err}`;
-      } finally { if (event?.target) event.target.value = ''; }
-    };
-
-    window.processPantryOCR = async function() {
-      const area = document.getElementById('pantryOCRText');
-      const items = receiptTextToItems(area?.value || '');
-      if (!items.length) { showToast('No receipt items to import'); return; }
-      let added=0, increased=0, shoppingAdjusted=0;
-      items.forEach(raw => {
-        const m = raw.match(/^(.+?)\s+[xX](\d+)$/);
-        const name = (m ? m[1] : raw).trim();
-        const qty = m ? Math.max(1, parseInt(m[2],10)||1) : 1;
-        const existing = Store.state.pantryData.find(p => cleanIngName(p.name) === cleanIngName(name));
-        if (existing) { existing.qty = (Number(existing.qty)||0) + qty; increased++; }
-        else { Store.state.pantryData.unshift({name,qty,unitWeight:'1 item',cal:'N/A',fat:'N/A',sugar:'N/A',category:'Receipt Import',addedBy:Store.state.currentProfile,isFrequent:false,autoReorderDays:null}); added++; }
-        if (consumeShoppingForPantry(name, qty)) shoppingAdjusted++;
-      });
-      await saveState();
-      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
-      area.value=''; window.togglePantryOCR(false);
-      showToast(`📦 Receipt imported: ${added + increased} pantry items${shoppingAdjusted ? ` • ${shoppingAdjusted} shopping item(s) adjusted` : ''}`);
-    };
 
     window.toggleStarDirect = function(name, elementId) {
       const meal = Api.cache[elementId] || richOfflineDatabase.find(m => m.id === elementId || m.name === name);
@@ -2983,59 +2779,42 @@ window.autoSyncAllCalendars = function() {
     };
 
 window.updateQty = async function(type, idx, delta) {
-      if (type !== 'pantry') return;
-      const item = Store.state.pantryData[idx];
+      const isPantry = type === 'pantry';
+      const list = isPantry ? Store.state.pantryData : Store.state.shoppingData;
+      const item = list[idx];
       if (!item) return;
       const current = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
-      item.qty = Math.max(0, current + Number(delta || 0));
-      const increase = Math.max(0, item.qty - current);
-      if (increase) consumeShoppingForPantry(item.name, increase);
-      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
-      await saveState();
-    };
-
-    window.updateShoppingQty = async function(itemId, delta) {
-      const item = getShoppingItemById(itemId);
-      if (!item) return;
-      const current = Math.max(1, parseInt(item.qty, 10) || 1);
-      item.qty = Math.max(1, current + (parseInt(delta, 10) || 0));
-      UI.renderShopping();
+      const next = Math.max(isPantry ? 0 : 1, current + Number(delta || 0));
+      item.qty = next;
+      if (isPantry) UI.renderPantry();
+      else UI.renderShopping();
       await saveState();
     };
 
     window.setPantryManualQty = async function(idx, value) {
       const item = Store.state.pantryData[idx];
       if (!item) return;
-      const oldQty = Math.max(0, Number(item.qty) || 0);
       const qty = Math.max(0, parseInt(value, 10) || 0);
       item.qty = qty;
-      if (qty > oldQty) consumeShoppingForPantry(item.name, qty - oldQty);
-      UI.renderPantry(); UI.renderShopping(); UI.renderMeals();
+      UI.renderPantry();
       await saveState();
     };
 
-    window.setShoppingManualQty = async function(itemId, value) {
-      const item = getShoppingItemById(itemId);
+    window.setShoppingManualQty = async function(idx, value) {
+      const item = Store.state.shoppingData[idx];
       if (!item) return;
-      item.qty = Math.max(1, parseInt(value, 10) || 1);
-      UI.renderShopping();
-      await saveState();
-    };
-
-    window.removeShoppingItem = async function(itemId) {
-      ensureShoppingItemIds();
-      const idx = Store.state.shoppingData.findIndex(item => item && item.id === itemId);
-      if (idx < 0) return;
-      Store.state.shoppingData.splice(idx, 1);
+      const qty = Math.max(1, parseInt(value, 10) || 1);
+      item.qty = qty;
       UI.renderShopping();
       await saveState();
     };
 
     window.removeItem = function(type, idx) {
-      if (type !== 'pantry') return;
-      Store.state.pantryData.splice(idx, 1);
+      const list = type === 'pantry' ? Store.state.pantryData : Store.state.shoppingData;
+      list.splice(idx, 1);
       saveState();
-      UI.renderPantry();
+      if (type === 'pantry') UI.renderPantry();
+      else UI.renderShopping();
     };
 
 
@@ -3197,9 +2976,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.11";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.9";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.11";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.9";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
