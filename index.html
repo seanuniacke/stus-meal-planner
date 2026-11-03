@@ -1754,19 +1754,180 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       else{b.textContent='● Offline';b.style.background='#7c2d12';b.style.color='#fdba74';b.style.borderColor='#b45309';}
     }
     function updateHouseholdBadge(){const b=document.getElementById('householdSyncBadge'),t=document.getElementById('householdSyncText');if(!b||!t)return;if(cloudSyncReady&&Store.state.householdId){b.textContent='Connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent=`${Store.state.householdName||'Household'} • Shared cloud sync is active.`;}else if(cloudSyncReady&&supabaseUser){b.textContent='Cloud connected';b.style.background='#064e3b';b.style.color='#34d399';t.textContent='Personal cloud sync is active for this account.';}else if(supabaseUser&&!navigator.onLine){b.textContent='Offline';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Offline — changes are saved on this device and will sync when you reconnect.';}else if(supabaseUser){b.textContent='No household';b.style.background='#7c2d12';b.style.color='#fdba74';t.textContent='Personal cloud sync is active. Create or join a household for shared features.';}else{b.textContent='Not connected';b.style.background='#374151';b.style.color='#d1d5db';t.textContent='Sign in to sync your personal data across devices.';}}
-    function ensureSupabaseAuthModal(){
-      if(!navigator.onLine)return;
-      if(document.getElementById('supabaseAuthModal')){document.getElementById('supabaseAuthModal').style.display='flex';return;}
-      const st=document.createElement('style');st.id='supabaseAuthStyles';st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}`;document.head.appendChild(st);
-      const m=document.createElement('div');m.id='supabaseAuthModal';
-      m.innerHTML=`<div id="supabaseAuthCard"><h2>☁️ MealFlow Cloud</h2><p>Sign in to sync your personal data across devices. Household sharing is optional.</p><input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address"><input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password"><div id="supabaseAuthButtons"><button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button><button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button></div><div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div></div>`;
-      document.body.appendChild(m);
-      const e=()=>document.getElementById('supabaseAuthEmail').value.trim(),pw=()=>document.getElementById('supabaseAuthPassword').value,stt=x=>document.getElementById('supabaseAuthStatus').textContent=x;
-      document.getElementById('supabaseSignInBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password.');stt('Signing in…');const{data,error}=await supabaseClient.auth.signInWithPassword({email:e(),password:pw()});if(error)return stt(error.message);await onSupabaseSignedIn(data.session)};
-      document.getElementById('supabaseSignUpBtn').onclick=async()=>{if(!e()||!pw())return stt('Enter your email and password first.');if(pw().length<6)return stt('Password must be at least 6 characters.');stt('Creating account…');const{data,error}=await supabaseClient.auth.signUp({email:e(),password:pw()});if(error)return stt(error.message);if(data.session)await onSupabaseSignedIn(data.session);else stt('Account created. Check your email if confirmation is required.')};
+
+function ensureSupabaseAuthModal(){
+  if(!navigator.onLine)return;
+
+  let m=document.getElementById('supabaseAuthModal');
+  if(m){
+    m.style.display='flex';
+    return;
+  }
+
+  const st=document.createElement('style');
+  st.id='supabaseAuthStyles';
+  st.textContent=`#supabaseAuthModal{position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:20px}#supabaseAuthCard{width:min(420px,100%);background:#1e293b;border:1px solid #475569;border-radius:18px;padding:24px;color:#f8fafc}#supabaseAuthCard input{width:100%;box-sizing:border-box;margin:7px 0;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff}#supabaseAuthButtons{display:flex;gap:8px;margin-top:10px}#supabaseAuthButtons button{flex:1}#supabaseForgotLink{background:none;border:0;color:#c4b5fd;text-decoration:underline;cursor:pointer;padding:10px 0;font-size:.85rem}`;
+  document.head.appendChild(st);
+
+  m=document.createElement('div');
+  m.id='supabaseAuthModal';
+  document.body.appendChild(m);
+
+  const card=document.createElement('div');
+  card.id='supabaseAuthCard';
+  m.appendChild(card);
+
+  const status=msg=>{
+    const el=document.getElementById('supabaseAuthStatus');
+    if(el)el.textContent=msg;
+  };
+
+  function showLogin(){
+    card.innerHTML=`
+      <h2>☁️ MealFlow Cloud</h2>
+      <p>Sign in to sync your personal data across devices. Household sharing is optional.</p>
+      <input id="supabaseAuthEmail" type="email" autocomplete="email" placeholder="Email address">
+      <input id="supabaseAuthPassword" type="password" autocomplete="current-password" placeholder="Password">
+      <div id="supabaseAuthButtons">
+        <button class="btn btn-purple" id="supabaseSignInBtn">Sign In</button>
+        <button class="btn btn-green" id="supabaseSignUpBtn">Create Account</button>
+      </div>
+      <button id="supabaseForgotLink" type="button">Forgot password?</button>
+      <div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div>`;
+
+    const email=()=>document.getElementById('supabaseAuthEmail').value.trim();
+    const password=()=>document.getElementById('supabaseAuthPassword').value;
+
+    document.getElementById('supabaseSignInBtn').onclick=async()=>{
+      if(!email()||!password())return status('Enter your email and password.');
+      status('Signing in…');
+      const{data,error}=await supabaseClient.auth.signInWithPassword({
+        email:email(),password:password()
+      });
+      if(error)return status(error.message);
+      await onSupabaseSignedIn(data.session);
+    };
+
+    document.getElementById('supabaseSignUpBtn').onclick=async()=>{
+      if(!email()||!password())return status('Enter your email and password first.');
+      if(password().length<10)return status('Password must be at least 10 characters.');
+      status('Creating account…');
+      const{data,error}=await supabaseClient.auth.signUp({
+        email:email(),password:password()
+      });
+      if(error)return status(error.message);
+      if(data.session)await onSupabaseSignedIn(data.session);
+      else status('Account created. Check your email if confirmation is required.');
+    };
+
+    document.getElementById('supabaseForgotLink').onclick=showForgotPassword;
+  }
+
+  function showForgotPassword(){
+    const savedEmail=document.getElementById('supabaseAuthEmail')?.value.trim()||'';
+    card.innerHTML=`
+      <h2>Reset your password</h2>
+      <p>Enter the email address associated with your MealFlow account. We'll send you a secure reset link.</p>
+      <input id="supabaseRecoveryEmail" type="email" autocomplete="email" placeholder="Email address">
+      <div id="supabaseAuthButtons">
+        <button class="btn btn-purple" id="supabaseSendRecoveryBtn">Send Reset Link</button>
+        <button class="btn" id="supabaseBackToLoginBtn">Back</button>
+      </div>
+      <div id="supabaseAuthStatus" style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div>`;
+
+    document.getElementById('supabaseRecoveryEmail').value=savedEmail;
+
+    document.getElementById('supabaseBackToLoginBtn').onclick=showLogin;
+
+    document.getElementById('supabaseSendRecoveryBtn').onclick=async()=>{
+      const email=document.getElementById('supabaseRecoveryEmail').value.trim();
+      if(!email)return status('Enter your email address.');
+
+      status('Sending reset email…');
+      const{error}=await supabaseClient.auth.resetPasswordForEmail(email,{
+        redirectTo:'https://seanuniacke.github.io/stus-meal-planner/'
+      });
+
+      if(error)return status(error.message);
+      status('If an account exists for that address, a password reset email has been sent. Check your inbox.');
+    };
+  }
+
+  showLogin();
+}
+
+function showMealFlowPasswordRecovery(){
+  window.mealFlowPasswordRecoveryActive=true;
+
+  ensureSupabaseAuthModal();
+
+  const card=document.getElementById('supabaseAuthCard');
+  if(!card)return;
+
+  card.innerHTML=`
+    <h2>🔐 Choose a new password</h2>
+    <p>Enter your new MealFlow password below. It must be at least 10 characters.</p>
+    <input id="mealFlowNewPassword" type="password"
+      autocomplete="new-password" placeholder="New password">
+    <input id="mealFlowConfirmPassword" type="password"
+      autocomplete="new-password" placeholder="Confirm new password">
+    <div id="supabaseAuthButtons">
+      <button class="btn btn-purple" id="mealFlowSavePasswordBtn">
+        Save New Password
+      </button>
+    </div>
+    <div id="supabaseAuthStatus"
+      style="margin-top:10px;color:#fbbf24;font-size:.82rem"></div>`;
+
+  document.getElementById('mealFlowSavePasswordBtn').onclick=async()=>{
+    const password=document.getElementById('mealFlowNewPassword').value;
+    const confirmPassword=document.getElementById('mealFlowConfirmPassword').value;
+    const status=document.getElementById('supabaseAuthStatus');
+
+    if(password.length<10){
+      status.textContent='Password must be at least 10 characters.';
+      return;
     }
+
+    if(password!==confirmPassword){
+      status.textContent='The passwords do not match.';
+      return;
+    }
+
+    status.textContent='Updating your password…';
+
+    const{error}=await supabaseClient.auth.updateUser({
+      password:password
+    });
+
+    if(error){
+      status.textContent='Password update failed: '+error.message;
+      return;
+    }
+
+    window.mealFlowPasswordRecoveryActive=false;
+
+    const{data}=await supabaseClient.auth.getSession();
+    const modal=document.getElementById('supabaseAuthModal');
+    if(modal)modal.style.display='none';
+
+    if(data.session)await onSupabaseSignedIn(data.session);
+    else{
+      ensureSupabaseAuthModal();
+      showToast('Password updated. Please sign in with your new password.');
+    }
+  };
+}
+
     async function onSupabaseSignedIn(session){
+	
+	  if(window.mealFlowPasswordRecoveryActive){
+    showMealFlowPasswordRecovery();
+    return;
+  }
       supabaseUser=session?.user||null;if(!supabaseUser)return;cloudSyncReady=true;
+	  
+	  
       const m=document.getElementById('supabaseAuthModal');if(m)m.style.display='none';
       if(navigator.onLine){await loadHouseholdMembership();updateHouseholdBadge();await pullStateFromCloud();subscribeToSupabaseChanges();}else{updateHouseholdBadge();}
       if(Store.state.householdId&&navigator.onLine)ensurePushSubscription().catch(()=>{});
@@ -1776,7 +1937,32 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       if(!isSupabaseConfigured())return;
       try{
         if(!supabaseClient){supabaseClient=window.supabase.createClient(CLOUD_SYNC_CONFIG.url,CLOUD_SYNC_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-          supabaseClient.auth.onAuthStateChange((ev,se)=>{if(ev==='SIGNED_IN'&&se)setTimeout(()=>onSupabaseSignedIn(se),0);if(ev==='SIGNED_OUT'){cloudSyncReady=false;supabaseUser=null;Store.state.householdId=null;if(supabaseChannel){supabaseClient.removeChannel(supabaseChannel);supabaseChannel=null;}updateHouseholdBadge();if(navigator.onLine)ensureSupabaseAuthModal();}});}
+          supabaseClient.auth.onAuthStateChange((ev,se)=>{
+  if(ev==='PASSWORD_RECOVERY'){
+    setTimeout(showMealFlowPasswordRecovery,0);
+    return;
+  }
+
+  if(ev==='SIGNED_IN'&&se){
+    if(window.mealFlowPasswordRecoveryActive){
+      setTimeout(showMealFlowPasswordRecovery,0);
+      return;
+    }
+    setTimeout(()=>onSupabaseSignedIn(se),0);
+  }
+
+  if(ev==='SIGNED_OUT'){
+    cloudSyncReady=false;
+    supabaseUser=null;
+    Store.state.householdId=null;
+    if(supabaseChannel){
+      supabaseClient.removeChannel(supabaseChannel);
+      supabaseChannel=null;
+    }
+    updateHouseholdBadge();
+    if(navigator.onLine)ensureSupabaseAuthModal();
+  }
+});}
         const{data,error}=await supabaseClient.auth.getSession();if(error)throw error;
         if(data.session)await onSupabaseSignedIn(data.session);else if(navigator.onLine)ensureSupabaseAuthModal();else updateHouseholdBadge();
       }catch(e){console.error('Supabase initialization error:',e);if(navigator.onLine)ensureSupabaseAuthModal();else updateHouseholdBadge();}
@@ -2844,14 +3030,30 @@ window.updateMealFlowEmail = async function() {
 };
 
 window.updateMealFlowPassword = async function() {
-  if (!supabaseClient || !supabaseUser) return showToast('Please sign in first.');
-  const next = prompt('Enter a new MealFlow password (minimum 8 characters):');
+  if (!supabaseClient || !supabaseUser) {
+    return showToast('Please sign in first.');
+  }
+
+  const next = prompt('Enter a new MealFlow password (minimum 10 characters):');
   if (!next) return;
-  if (next.length < 8) return showToast('Password must be at least 8 characters.');
+
+  if (next.length < 10) {
+    return showToast('Password must be at least 10 characters.');
+  }
+
   const confirmPw = prompt('Enter the new password again:');
-  if (next !== confirmPw) return showToast('Passwords did not match.');
-  const { error } = await supabaseClient.auth.updateUser({ password: next });
-  if (error) return showToast('Password update failed: ' + error.message);
+  if (next !== confirmPw) {
+    return showToast('Passwords did not match.');
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({
+    password: next
+  });
+
+  if (error) {
+    return showToast('Password update failed: ' + error.message);
+  }
+
   showToast('✓ MealFlow password updated.');
 };
 
