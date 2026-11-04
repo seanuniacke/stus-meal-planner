@@ -26,6 +26,7 @@ let supabaseChannel = null;
 let supabaseUser = null;
 let cloudSyncReady = false;
 let cloudSyncInFlight = false;
+let cloudSyncPending = false;
   
     // Register Service Worker for offline caching
 console.log("Service worker temporarily disabled for Supabase migration.");
@@ -594,6 +595,11 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
             <div class="pill" data-pantry-cat="starch" onclick="filterPantryCategory('starch', this)">🍚 Starch & Grains</div>
             <div class="pill" data-pantry-cat="dairy" onclick="filterPantryCategory('dairy', this)">🥛 Dairy & Eggs</div>
             <div class="pill" data-pantry-cat="pantry_oil" onclick="filterPantryCategory('pantry_oil', this)">🫒 Oils, Spices & Sauces</div>
+            <div class="pill" data-pantry-cat="household" onclick="filterPantryCategory('household', this)">🧽 Household & Cleaning</div>
+            <div class="pill" data-pantry-cat="paper" onclick="filterPantryCategory('paper', this)">🧻 Paper & Bags</div>
+            <div class="pill" data-pantry-cat="personal" onclick="filterPantryCategory('personal', this)">🧴 Personal Care</div>
+            <div class="pill" data-pantry-cat="pets" onclick="filterPantryCategory('pets', this)">🐾 Pet Supplies</div>
+            <div class="pill" data-pantry-cat="baby" onclick="filterPantryCategory('baby', this)">🧸 Baby & Kids</div>
           </div>
         </div>
 
@@ -1516,7 +1522,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.12";
+      const ver = "v0.9.13"; // Pantry controls + safer queued cloud saves
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1994,7 +2000,8 @@ function showMealFlowPasswordRecovery(){
     }
     window.saveState=async function(){
       persistLocalState();
-      if(!cloudSyncReady||!supabaseClient||!supabaseUser||!navigator.onLine||cloudSyncInFlight)return;
+      if(!cloudSyncReady||!supabaseClient||!supabaseUser||!navigator.onLine)return;
+      if(cloudSyncInFlight){cloudSyncPending=true;return;}
       cloudSyncInFlight=true;
       try{
         const payload=getCloudPayload();
@@ -2007,7 +2014,13 @@ function showMealFlowPasswordRecovery(){
           if(error)throw error;
           console.log('Cloud save: app_state OK');
         }
-      }catch(e){console.error('Cloud save error:',e)}finally{cloudSyncInFlight=false;}
+      }catch(e){console.error('Cloud save error:',e)}finally{
+        cloudSyncInFlight=false;
+        if(cloudSyncPending){
+          cloudSyncPending=false;
+          setTimeout(()=>{if(navigator.onLine)window.saveState();},0);
+        }
+      }
     };
     async function pullStateFromCloud(){
       if(!cloudSyncReady||!supabaseClient||!supabaseUser||!navigator.onLine)return;
@@ -2176,6 +2189,7 @@ function showMealFlowPasswordRecovery(){
       try {
         const curProf = localStorage.getItem('stus_current_profile');
         if (curProf) Store.state.currentProfile = curProf;
+        Store.state.plannerScheduleOnly = localStorage.getItem('mealflow_planner_schedule_only') === 'true';
 
         const ma = localStorage.getItem('stus_master_allergies');
         if (ma) {
@@ -2230,6 +2244,39 @@ function showMealFlowPasswordRecovery(){
         console.warn("State restore error:", e);
       }
     }
+
+    // Pantry category matching and sort controls. These handlers were referenced
+    // by the v0.9.12 UI but were missing from its script.
+    function pantryItemMatchesFilter(item, filter) {
+      if (!filter || filter === 'all') return true;
+      const category = String(item.category || '').toLowerCase();
+      const name = String(item.name || '').toLowerCase();
+      const text = category + ' ' + name;
+      const rules = {
+        reorder: () => !!item.autoReorderDays,
+        protein: () => /meat|beef|poultry|chicken|turkey|pork|sausage|protein/.test(text),
+        seafood: () => /seafood|fish|shellfish|salmon|tuna|shrimp|prawn|cod|halibut/.test(text),
+        veggies: () => /vegetable|veggies|produce: fresh vegetables|fresh herbs|greens|onion|garlic|pepper|tomato|potato|carrot|lettuce|spinach|broccoli|cucumber/.test(text),
+        fruit: () => /fruit|apple|banana|orange|lemon|lime|berry|berries|avocado|grape|melon/.test(text),
+        starch: () => /grain|bakery|bread|pasta|rice|noodle|flour|oat|cereal|tortilla/.test(text),
+        dairy: () => /dairy|egg|milk|cream|butter|cheese|yogurt/.test(text),
+        pantry_oil: () => /pantry:|oil|sauce|spice|seasoning|vinegar/.test(text),
+        household: () => /household:|clean|detergent|dish soap|laundry|disinfect|sponge|mop|broom/.test(text),
+        paper: () => /paper|disposable|bag|wrap|foil|tissue|napkin|toilet paper/.test(text),
+        personal: () => /personal care|toiletr|toothpaste|toothbrush|shampoo|conditioner|deodorant|soap|razor|lotion/.test(text),
+        pets: () => /pet supplies|pet food|cat litter|kitty litter|dog food|cat food|leash|collar|pet toy/.test(text),
+        baby: () => /baby|kids|diaper|wipes|formula|pacifier/.test(text)
+      };
+      return rules[filter] ? rules[filter]() : true;
+    }
+    window.filterPantryCategory = function(category) {
+      Store.state.activePantryCategoryFilter = category || 'all';
+      UI.renderPantry();
+    };
+    window.setPantrySort = function(sort) {
+      Store.state.activePantrySort = ['name_asc','reorder_first','qty_desc','qty_asc'].includes(sort) ? sort : 'name_asc';
+      UI.renderPantry();
+    };
 
     // Offline changes are kept in localStorage. When signed into a household,
     // saveState() also writes the shared state to Supabase.
@@ -2395,6 +2442,110 @@ function showMealFlowPasswordRecovery(){
       </div>`;
     }
 
+    function inferMealFlowItemCategory(name) {
+      const select = document.getElementById('addItemCategorySelect');
+      if (!select || typeof window.handleSmartFoodInput !== 'function') return 'General: Household';
+      const previousValue = select.value;
+      const previousManual = window._mealflowCategoryManuallySelected;
+      window._mealflowCategoryManuallySelected = false;
+      window.handleSmartFoodInput(name);
+      const category = select.value || 'General: Household';
+      select.value = previousValue;
+      window._mealflowCategoryManuallySelected = previousManual;
+      return category;
+    }
+
+    function getMealFlowRecipe(mealId) {
+      return Api.cache[mealId]
+        || richOfflineDatabase.find(m => String(m.id) === String(mealId))
+        || Store.state.customRecipes.find(m => String(m.id) === String(mealId))
+        || null;
+    }
+
+    function escapeMealFlowHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    window.openRecipeById = function(mealId) {
+      const meal = getMealFlowRecipe(mealId);
+      if (!meal) return showToast('Recipe details are not available. Refresh the meal suggestions and try again.');
+      const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+      const instructions = Array.isArray(meal.instructions) ? meal.instructions : String(meal.instructions || '').split(/\r?\n+/).filter(Boolean);
+      const title = document.getElementById('modalRecipeTitle');
+      const img = document.getElementById('modalRecipeImg');
+      const meta = document.getElementById('modalRecipeMetaStrip');
+      const ingBox = document.getElementById('modalIngredients');
+      const stepsBox = document.getElementById('modalInstructions');
+      if (title) title.textContent = '📖 ' + (meal.name || meal.title || 'Recipe');
+      if (img) { img.src = meal.img || Api.fallbackImg; img.alt = meal.name || meal.title || 'Recipe'; }
+      if (meta) meta.textContent = [meal.cuisine || 'Family recipe', meal.time || 'Meal', meal.timeEst || ''].filter(Boolean).join(' • ');
+      if (ingBox) ingBox.innerHTML = ingredients.length ? ingredients.map(raw => {
+        const ing = typeof raw === 'string' ? {name:raw, reqQty:1, unit:'to taste'} : raw;
+        return `<div class="recipe-ing-card"><b>${escapeMealFlowHtml(ing.name || 'Ingredient')}</b><span>${escapeMealFlowHtml(ing.reqQty || 1)} ${escapeMealFlowHtml(ing.unit || '')}</span></div>`;
+      }).join('') : '<div style="color:var(--text-muted);">No ingredient list is available for this recipe.</div>';
+      if (stepsBox) stepsBox.innerHTML = instructions.length ? instructions.map((step,i) => `<div class="recipe-step-row"><b>${i+1}.</b> ${escapeMealFlowHtml(step)}</div>`).join('') : '<div style="color:var(--text-muted);">No cooking instructions are available.</div>';
+      const cookBtn = document.getElementById('modalCookBtn');
+      const shopBtn = document.getElementById('modalShopBtn');
+      if (cookBtn) cookBtn.onclick = () => window.cookAndDeductLive(mealId);
+      if (shopBtn) shopBtn.onclick = () => window.addMissingToShoppingLive(mealId);
+      openModal('recipeModal');
+    };
+
+    window.addMissingToShoppingLive = async function(mealId) {
+      const meal = getMealFlowRecipe(mealId);
+      if (!meal) return showToast('Recipe details are not available.');
+      const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+      if (!ingredients.length) return showToast('This recipe has no ingredient list to compare.');
+      let added = 0;
+      for (const raw of ingredients) {
+        const ing = typeof raw === 'string' ? {name:raw, reqQty:1, unit:'to taste'} : raw;
+        const name = String(ing.name || '').trim();
+        if (!name) continue;
+        const required = Math.max(1, Number(ing.reqQty) || 1);
+        const pantryItem = findInPantry(name);
+        const available = pantryItem ? Math.max(0, Number(pantryItem.qty) || 0) : 0;
+        const deficit = Math.max(0, required - available);
+        if (!deficit) continue;
+        const existing = Store.state.shoppingData.find(item => cleanIngName(item.name) === cleanIngName(name));
+        if (existing) existing.qty = Math.max(1, Number(existing.qty) || 1) + deficit;
+        else Store.state.shoppingData.push({name,qty:deficit,unitWeight:ing.unit || '1 unit',category:pantryItem?.category || inferMealFlowItemCategory(name),cal:'N/A',fat:'N/A',sugar:'N/A',addedBy:Store.state.currentProfile});
+        added++;
+      }
+      await window.saveState();
+      UI.renderShopping();
+      showToast(added ? `✓ Added ${added} missing ingredient${added===1?'':'s'} for ${meal.name || meal.title}.` : '✓ Your pantry already covers this recipe.');
+    };
+
+    window.cookAndDeductLive = async function(mealId) {
+      const meal = getMealFlowRecipe(mealId);
+      if (!meal) return showToast('Recipe details are not available.');
+      const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+      if (!ingredients.length) return showToast('This recipe has no ingredient list to deduct.');
+      const deficits = [];
+      const deductions = [];
+      for (const raw of ingredients) {
+        const ing = typeof raw === 'string' ? {name:raw, reqQty:1} : raw;
+        const name = String(ing.name || '').trim();
+        if (!name) continue;
+        const required = Math.max(1, Number(ing.reqQty) || 1);
+        const pantryItem = findInPantry(name);
+        const available = pantryItem ? Math.max(0, Number(pantryItem.qty) || 0) : 0;
+        if (!pantryItem || available < required) deficits.push(`${name} (need ${required}, have ${available})`);
+        else deductions.push({pantryItem,required});
+      }
+      if (deficits.length) {
+        showToast('Pantry is short. Add missing ingredients to the shopping list first.');
+        return;
+      }
+      if (!confirm(`Deduct the ingredients for ${meal.name || meal.title} from your pantry?`)) return;
+      deductions.forEach(({pantryItem,required}) => { pantryItem.qty = Math.max(0,(Number(pantryItem.qty)||0)-required); });
+      await window.saveState();
+      UI.renderPantry();
+      UI.renderShopping();
+      UI.renderMeals();
+      showToast(`🍳 Pantry updated for ${meal.name || meal.title}.`);
+    };
+
     const UI = {
       renderMeals: async function() {
         const grid = document.getElementById('mealOptionsGrid');
@@ -2421,17 +2572,36 @@ function showMealFlowPasswordRecovery(){
       renderPantry: function() {
         const container = document.getElementById('pantryList');
         if (!container) return;
-        container.innerHTML = Store.state.pantryData.map((item, idx) => `
+        const filter = Store.state.activePantryCategoryFilter || 'all';
+        const sort = Store.state.activePantrySort || 'name_asc';
+        let items = Store.state.pantryData.map((item, idx) => ({ item, idx }));
+        items = items.filter(({item}) => pantryItemMatchesFilter(item, filter));
+        items.sort((a, b) => {
+          const av = Number(a.item.qty) || 0, bv = Number(b.item.qty) || 0;
+          if (sort === 'reorder_first') return Number(!!b.item.autoReorderDays) - Number(!!a.item.autoReorderDays) || String(a.item.name || '').localeCompare(String(b.item.name || ''));
+          if (sort === 'qty_desc') return bv - av || String(a.item.name || '').localeCompare(String(b.item.name || ''));
+          if (sort === 'qty_asc') return av - bv || String(a.item.name || '').localeCompare(String(b.item.name || ''));
+          return String(a.item.name || '').localeCompare(String(b.item.name || ''));
+        });
+        document.querySelectorAll('#pantryCategoryFilterBar [data-pantry-cat]').forEach(el => el.classList.toggle('active', el.dataset.pantryCat === filter));
+        const sortSelect = document.getElementById('pantrySortSelect');
+        if (sortSelect && sortSelect.value !== sort) sortSelect.value = sort;
+        if (!items.length) {
+          container.innerHTML = '<div class="list-item-row" style="justify-content:center;color:var(--text-muted);">No pantry items match this filter.</div>';
+          return;
+        }
+        container.innerHTML = items.map(({item, idx}) => `
           <div class="list-item-row">
             <div class="list-item-title">
               <span>${item.name}</span>
               <span class="badge-tag badge-cuisine">${item.category || 'Pantry'}</span>
+              ${item.autoReorderDays ? `<span class="badge-tag" style="background:#064e3b;color:#a7f3d0;">Reorder ${item.autoReorderDays}d</span>` : ''}
             </div>
             <div class="list-item-controls">
               <div class="pantry-amount-col">
                 <span class="pantry-amount-label">In Pantry</span>
                 <div class="pantry-amount-inputs">
-                  <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setPantryManualQty(${idx}, this.value)">
+                  <input type="number" min="0" class="pantry-manual-input" value="${Number(item.qty) || 0}" onchange="window.setPantryManualQty(${idx}, this.value)">
                   <button type="button" class="qty-step-btn qty-plus" aria-label="Increase pantry quantity" onclick="window.updateQty('pantry', ${idx}, 1)">+</button>
                   <button type="button" class="qty-step-btn" aria-label="Decrease pantry quantity" onclick="window.updateQty('pantry', ${idx}, -1)">−</button>
                 </div>
@@ -2444,11 +2614,25 @@ function showMealFlowPasswordRecovery(){
       renderShopping: function() {
         const container = document.getElementById('shoppingListGrid');
         if (!container) return;
-        container.innerHTML = Store.state.shoppingData.map((item, idx) => `
+        container.innerHTML = Store.state.shoppingData.map((item, idx) => {
+          const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+          const pantryMatch = Store.state.pantryData.find(p => norm(p.name) === norm(item.name));
+          const pantryQty = pantryMatch ? Math.max(0, Number(pantryMatch.qty) || 0) : 0;
+          const buyQty = Math.max(1, Number(item.qty) || 1);
+          const sameUnit = pantryMatch && (!pantryMatch.unitWeight || !item.unitWeight || norm(pantryMatch.unitWeight) === norm(item.unitWeight));
+          const stockNote = pantryMatch
+            ? (!sameUnit
+                ? `<span style="display:block;color:#fbbf24;font-size:.68rem;margin-top:3px;">Pantry match found • check units before adjusting quantity</span>`
+                : pantryQty >= buyQty
+                  ? `<span style="display:block;color:#34d399;font-size:.68rem;margin-top:3px;">✓ Pantry has ${pantryQty} • shopping qty ${buyQty}</span>`
+                  : `<span style="display:block;color:#fbbf24;font-size:.68rem;margin-top:3px;">Pantry has ${pantryQty} • shopping qty ${buyQty} • check shortfall</span>`)
+            : `<span style="display:block;color:var(--text-muted);font-size:.68rem;margin-top:3px;">Not currently listed in pantry</span>`;
+          return `
           <div class="list-item-row">
             <div class="list-item-title">
               <span>${item.name}</span>
               <span class="badge-tag badge-cuisine">${item.category || 'Grocery'}</span>
+              ${stockNote}
             </div>
             <div class="list-item-controls">
               <div class="pantry-amount-col">
@@ -2462,7 +2646,7 @@ function showMealFlowPasswordRecovery(){
               <button class="btn btn-red btn-sm" onclick="window.removeItem('shop', ${idx})">🗑️</button>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       },
       renderCalendar: function(viewMode) {
         const container = document.getElementById('calendarDisplayContainer');
@@ -2808,6 +2992,7 @@ window.hidePlannerDropdown = function() {
 
 window.togglePlannerViewFilter = function() {
   Store.state.plannerScheduleOnly = !Store.state.plannerScheduleOnly;
+  try { localStorage.setItem('mealflow_planner_schedule_only', String(Store.state.plannerScheduleOnly)); } catch(e) {}
   const label = document.getElementById('plannerDropdownFilterLabel');
   const icon = document.getElementById('plannerDropdownFilterIcon');
   if (Store.state.plannerScheduleOnly) {
