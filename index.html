@@ -1522,7 +1522,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.13"; // Pantry controls + safer queued cloud saves
+      const ver = "v0.9.13"; // Pantry controls + shopping quantity hotfix
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -2639,8 +2639,8 @@ function showMealFlowPasswordRecovery(){
                 <span class="pantry-amount-label">Qty to Buy</span>
                 <div class="pantry-amount-inputs">
                   <input type="number" class="pantry-manual-input" value="${item.qty}" onchange="window.setShoppingManualQty(${idx}, this.value)">
-                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.updateQty('shop', ${idx}, 1)">+</button>
-                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.updateQty('shop', ${idx}, -1)">−</button>
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.adjustShoppingQty(${idx}, 1); return false;">+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.adjustShoppingQty(${idx}, -1); return false;">−</button>
                 </div>
               </div>
               <button class="btn btn-red btn-sm" onclick="window.removeItem('shop', ${idx})">🗑️</button>
@@ -2882,7 +2882,7 @@ window.submitActiveTargetItem = async function() {
     showToast(`Added ${qty}x "${name}" to Pantry Inventory!`);
   } else {
     UI.renderShopping();
-    showToast(`Added ${qty}x "${name}" to Shopping List!`);
+    // Shopping additions update the list quietly; avoid the legacy success popup.
   }
 };
 
@@ -3171,11 +3171,23 @@ window.updateQty = async function(type, idx, delta) {
       await saveState();
     };
 
-    window.setShoppingManualQty = async function(idx, value) {
-      const item = Store.state.shoppingData[idx];
+    // Dedicated shopping-list quantity handlers. Keep these separate from pantry
+    // controls so shopping buttons cannot be affected by pantry/index logic.
+    window.adjustShoppingQty = async function(idx, delta) {
+      const list = Array.isArray(Store.state.shoppingData) ? Store.state.shoppingData : [];
+      const item = list[Number(idx)];
       if (!item) return;
-      const qty = Math.max(1, parseInt(value, 10) || 1);
-      item.qty = qty;
+      const current = Math.max(1, parseInt(item.qty, 10) || 1);
+      item.qty = Math.max(1, current + (Number(delta) < 0 ? -1 : 1));
+      UI.renderShopping();
+      await saveState();
+    };
+
+    window.setShoppingManualQty = async function(idx, value) {
+      const item = Store.state.shoppingData[Number(idx)];
+      if (!item) return;
+      const parsed = parseInt(value, 10);
+      item.qty = Math.max(1, Number.isFinite(parsed) ? parsed : 1);
       UI.renderShopping();
       await saveState();
     };
