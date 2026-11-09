@@ -239,6 +239,9 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     .planner-action-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; color: #f8fafc; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
     .planner-action-item:hover { background: #1e293b; color: var(--accent-amber); }
     .calendar-grid-monthly { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin-top: 8px; width: 100%; }
+    .calendar-month-cell .cal-day-box { padding:5px; min-height:78px; overflow:hidden; }
+    .calendar-month-cell .cal-meal-line, .calendar-month-cell .cal-day-box > div:nth-last-child(2) { display:none; }
+    .calendar-month-cell .cal-day-box { font-size:.68rem; }
     .calendar-grid-weekly { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px; margin-top: 8px; width: 100%; }
     .calendar-grid-daily { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; width: 100%; }
     .cal-day-box { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: space-between; min-height: 180px; box-sizing: border-box; }
@@ -556,20 +559,33 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
           <div class="card-title">📦 Live Pantry Inventory</div>
           <div style="display:flex; gap:5px; flex-wrap:wrap;">
             <button class="btn btn-blue btn-sm" onclick="togglePantryOCR()">📄 Text / Receipt OCR</button>
-            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload Receipt, Text or Image">📁 Upload File</button>
+            <button class="btn btn-purple btn-sm" onclick="document.getElementById('pantryFileInput').click()" title="Upload Receipt PDF, Photo or Text">📁 Upload File</button>
             <button class="btn btn-amber btn-sm" onclick="openLiveCameraScanner('pantry')" title="Scan Fridge, Counter or Pantry with Live Camera">📷 AI Camera Scan</button>
             <button class="btn btn-green btn-sm" onclick="openAddItemModal('pantry')">+ Add Item</button>
-            <input type="file" id="pantryFileInput" style="display:none;" accept="image/*,.txt,.csv,.json" onchange="handlePantryFileUpload(event)">
+            <input type="file" id="pantryFileInput" style="display:none;" accept="image/*,.txt,.csv,.json,.pdf" multiple onchange="handlePantryFileUpload(event)">
           </div>
         </div>
         
         <div id="pantryOCRBox" style="display:none; background:#0f172a; border:1px dashed var(--border-color); border-radius:8px; padding:12px; margin-bottom:10px;">
-          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Paste Receipt / OCR Ingredients List:</b>
+          <b style="font-size:0.82rem; color:var(--accent-blue);">📄 Paste a food list here, or upload a PDF/photo for free local text scanning:</b>
           <textarea id="pantryOCRText" rows="3" placeholder="Ground Beef, Garlic, Avocado..." style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:#1e293b; color:#fff; font-size:0.78rem;"></textarea>
           <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:6px;">
             <button class="btn btn-sm" style="background:#1e293b;" onclick="togglePantryOCR()">Cancel</button>
             <button class="btn btn-green btn-sm" onclick="processPantryOCR()">Import to Pantry</button>
           </div>
+        </div>
+
+        <div id="aiScanReviewPanel" style="display:none; background:#0f172a; border:1px solid var(--accent-amber); border-radius:8px; padding:12px; margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+            <b style="font-size:.84rem;color:var(--accent-amber);">🔎 Scan results — review before importing</b>
+            <button type="button" class="btn btn-sm" onclick="clearAIScanReview()">✕ Clear</button>
+          </div>
+          <div id="aiScanReviewItems" style="display:grid;gap:6px;"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-sm" onclick="clearAIScanReview()">Cancel</button>
+            <button type="button" class="btn btn-green btn-sm" onclick="importAIScanResults()">Add selected items</button>
+          </div>
+          <div id="aiScanReviewNote" style="font-size:.68rem;color:var(--text-muted);margin-top:7px;">AI suggestions can be imperfect. Check quantities and names before importing.</div>
         </div>
 
         <div style="background:#090d16; border:1px solid var(--border-color); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
@@ -615,12 +631,12 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
           <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
             <button class="btn btn-purple btn-sm" onclick="openModal('quickShoppingModal')">⚡ Quick Voice / Barcode</button>
             <button class="btn btn-green btn-sm" onclick="openAddItemModal('shopping')">+ Add Item</button>
-            <button class="btn btn-amber btn-sm" onclick="openOrderCartModal()" style="font-weight:800; box-shadow:0 2px 6px rgba(249,115,22,0.35);">🛒 Order / Cart</button>
+            <button class="btn btn-amber btn-sm" onclick="openOrderCartModal()" style="font-weight:800; box-shadow:0 2px 6px rgba(249,115,22,0.35);">🛒 Checkout</button>
           </div>
         </div>
         <div id="shoppingListGrid" class="vertical-list-container"></div>
         <div id="shoppingBottomOrderBar" style="display:flex; justify-content:flex-end; margin-top:14px; padding-top:10px; border-top:1px solid var(--border-color);">
-          <button class="btn btn-amber" onclick="openOrderCartModal()" style="padding:9px 16px; font-weight:800; font-size:0.92rem; box-shadow:0 3px 10px rgba(249,115,22,0.4);">🛒 Proceed to Order / Cart</button>
+          <button class="btn btn-amber" onclick="openOrderCartModal()" style="padding:9px 16px; font-weight:800; font-size:0.92rem; box-shadow:0 3px 10px rgba(249,115,22,0.4);">🛒 Proceed to Checkout</button>
         </div>
       </div>
     </div>
@@ -777,8 +793,8 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.1rem;">🥕</span>
               <div>
-                <div style="font-size:0.88rem; color:#fff;">Instacart Order Export</div>
-                <div style="font-size:0.7rem; color:var(--text-muted);">Quick-copy items formatted for Instacart cart matching</div>
+                <div style="font-size:0.88rem; color:#fff;">Open Instacart</div>
+                <div style="font-size:0.7rem; color:var(--text-muted);">Copies your basket, then opens Instacart; add items there</div>
               </div>
             </div>
             <span style="color:var(--text-muted);">❯</span>
@@ -788,7 +804,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
               <span style="font-size:1.1rem;">🏬</span>
               <div>
                 <div style="font-size:0.88rem; color:#fff;">Walmart Grocery</div>
-                <div style="font-size:0.7rem; color:var(--text-muted);">Transfer grocery list to Walmart Canada / US search</div>
+                <div style="font-size:0.7rem; color:var(--text-muted);">Copies your basket, then opens Walmart; add items there</div>
               </div>
             </div>
             <span style="color:var(--text-muted);">❯</span>
@@ -798,7 +814,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
               <span style="font-size:1.1rem;">🍁</span>
               <div>
                 <div style="font-size:0.88rem; color:#fff;">Real Canadian Superstore / PC Express</div>
-                <div style="font-size:0.7rem; color:var(--text-muted);">Format for PC Optimum / Superstore shopping list</div>
+                <div style="font-size:0.7rem; color:var(--text-muted);">Copies your basket, then opens PC Express; add items there</div>
               </div>
             </div>
             <span style="color:var(--text-muted);">❯</span>
@@ -835,7 +851,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         <button class="btn btn-sm" onclick="closeLiveCameraModal()">✕ Close</button>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-blue btn-sm" onclick="toggleCameraFacingMode()">🔄 Flip Camera</button>
-          <button class="btn btn-amber" id="cameraCaptureActionBtn" onclick="captureLiveCameraFrame()">📸 Snap & Analyze</button>
+          <button class="btn btn-amber" id="cameraCaptureActionBtn" onclick="captureLiveCameraFrame()">📸 Snap & Read Labels</button>
         </div>
       </div>
     </div>
@@ -1246,10 +1262,10 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
             </div>
             <div>
               <label style="font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Quantity:</label>
-              <div class="qty-control" style="width:100%; justify-content:space-between;">
-                <button class="qty-btn" type="button" onclick="adjustAddQty(-1)">-</button>
-                <input type="number" id="addItemQtyInput" value="1" min="1" style="width:45px; text-align:center; background:transparent; color:#fff; border:none; font-weight:bold;">
-                <button class="qty-btn" type="button" onclick="adjustAddQty(1)">+</button>
+              <div class="pantry-amount-inputs" style="width:100%;justify-content:flex-start;gap:5px;">
+                <input type="number" id="addItemQtyInput" value="1" min="1" step="1" class="pantry-manual-input" style="width:58px;text-align:center;">
+                <button class="qty-step-btn" type="button" aria-label="Decrease quantity" onclick="adjustAddQty(-1)">−</button>
+                <button class="qty-step-btn qty-plus" type="button" aria-label="Increase quantity" onclick="adjustAddQty(1)">+</button>
               </div>
             </div>
           </div>
@@ -1271,7 +1287,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       </div>
       <div class="modal-scrollable-body">
         <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
-          AI analyzed your snapshot and detected the following ingredients. Adjust quantities before importing:
+          MealFlow reads visible text on labels. Review the suggested items and quantities before importing:
         </p>
         <div id="aiScanResultsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       </div>
@@ -1522,7 +1538,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 
 <script>
     (function initAppVersion() {
-      const ver = "v0.9.13-shopfix2"; // Pantry controls + shopping quantity hotfix
+      const ver = "v0.9.16-free-scan-checkout"; // Core control repairs and accessibility fixes
       localStorage.setItem('stus_app_version', ver);
       window.APP_VERSION = ver;
     })();
@@ -1705,6 +1721,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         cloudSyncStatus: "offline",
         customRecipes: [],
         starredIds: [],
+        starredOps: [],
         masterAllergies: ["Peanuts", "Tree Nuts", "Milk", "Eggs", "Wheat", "Soy", "Fish", "Shellfish", "Gluten", "Dairy", "Cilantro"],
         userSettings: {
           Sean: { allergies: ["Shellfish", "Cilantro"], dietary: "None (Standard)", email: "sean@example.com", phone: "403-555-0101" },
@@ -2637,8 +2654,7 @@ function showMealFlowPasswordRecovery(){
         const container = document.getElementById('shoppingListGrid');
         if (!container) return;
         ensureShoppingItemIds();
-        container.innerHTML = Store.state.shoppingData.map((item) => {
-          const safeId = JSON.stringify(item.id);
+        container.innerHTML = Store.state.shoppingData.map((item, idx) => {
           const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
           const pantryMatch = Store.state.pantryData.find(p => norm(p.name) === norm(item.name));
           const pantryQty = pantryMatch ? Math.max(0, Number(pantryMatch.qty) || 0) : 0;
@@ -2662,12 +2678,12 @@ function showMealFlowPasswordRecovery(){
               <div class="pantry-amount-col">
                 <span class="pantry-amount-label">Qty to Buy</span>
                 <div class="pantry-amount-inputs">
-                  <input type="number" min="1" step="1" class="pantry-manual-input" value="${buyQty}" onchange='window.setShoppingManualQty(${safeId}, this.value)'>
-                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick='window.updateShoppingQty(${safeId}, 1)'>+</button>
-                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick='window.updateShoppingQty(${safeId}, -1)'>−</button>
+                  <input type="number" min="1" step="1" class="pantry-manual-input" value="${buyQty}" onchange="window.setShoppingManualQty(${idx}, this.value)">
+                  <button type="button" class="qty-step-btn qty-plus" aria-label="Increase shopping quantity" onclick="window.updateQty('shopping', ${idx}, 1)">+</button>
+                  <button type="button" class="qty-step-btn" aria-label="Decrease shopping quantity" onclick="window.updateQty('shopping', ${idx}, -1)">−</button>
                 </div>
               </div>
-              <button class="btn btn-red btn-sm" onclick='window.removeShoppingItem(${safeId})'>🗑️</button>
+              <button type="button" class="btn btn-red btn-sm" onclick="window.removeItem('shopping', ${idx})">🗑️</button>
             </div>
           </div>`;
         }).join('');
@@ -3195,31 +3211,17 @@ window.updateQty = async function(type, idx, delta) {
       await saveState();
     };
 
-    window.updateShoppingQty = async function(itemId, delta) {
-      const item = getShoppingItemById(itemId);
+    // Shopping quantity input mirrors the working pantry quantity control.
+    window.setShoppingManualQty = async function(idx, value) {
+      const item = Store.state.shoppingData[idx];
       if (!item) return;
-      const current = Math.max(1, parseInt(item.qty, 10) || 1);
-      item.qty = Math.max(1, current + (parseInt(delta, 10) || 0));
+      const qty = Math.max(1, parseInt(value, 10) || 1);
+      item.qty = qty;
       UI.renderShopping();
       await saveState();
     };
 
-    window.setShoppingManualQty = async function(itemId, value) {
-      const item = getShoppingItemById(itemId);
-      if (!item) return;
-      item.qty = Math.max(1, parseInt(value, 10) || 1);
-      UI.renderShopping();
-      await saveState();
-    };
-
-    window.removeShoppingItem = async function(itemId) {
-      ensureShoppingItemIds();
-      const idx = Store.state.shoppingData.findIndex(item => item && item.id === itemId);
-      if (idx < 0) return;
-      Store.state.shoppingData.splice(idx, 1);
-      UI.renderShopping();
-      await saveState();
-    };
+    // Shopping controls intentionally reuse the same index-based handlers as Pantry.
 
     window.removeItem = function(type, idx) {
       const list = type === 'pantry' ? Store.state.pantryData : Store.state.shoppingData;
@@ -3356,6 +3358,300 @@ window.signOutCloudSync = async function() {
   if (isSupabaseConfigured()) ensureSupabaseAuthModal();
 };
 
+// ===== v0.9.14 REPAIR LAYER =====
+/* MealFlow v0.9.14 repair layer. Overrides only the affected controls. */
+/* MealFlow v0.9.16: free local OCR, checkout basket, retailer handoff */
+(function(){
+  const $ = id => document.getElementById(id);
+  const safeText = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const currentName = () => (Store.state.currentProfile || 'User');
+
+  // Consistent quantity handlers shared by Pantry and Shopping.
+  window.adjustAddQty = function(delta){
+    const input=$('addItemQtyInput'); if(!input)return;
+    input.value=Math.max(1,(parseInt(input.value,10)||1)+(Number(delta)||0));
+  };
+  window.updateQty = async function(type, idx, delta){
+    const list=type==='pantry'?Store.state.pantryData:Store.state.shoppingData;
+    const item=list && list[Number(idx)]; if(!item)return;
+    item.qty=Math.max(type==='pantry'?0:1,(Number(item.qty)||0)+(Number(delta)||0));
+    if(type==='pantry')UI.renderPantry();else UI.renderShopping();
+    await window.saveState();
+  };
+  window.setShoppingManualQty = async function(idx,value){
+    const item=Store.state.shoppingData[Number(idx)];if(!item)return;
+    item.qty=Math.max(1,parseInt(value,10)||1);UI.renderShopping();await window.saveState();
+  };
+
+  // Checkout basket: moves items out of the active shopping list, but never places an order.
+  function readCheckout(){try{return JSON.parse(localStorage.getItem('mealflow_checkout_basket')||'[]');}catch(e){return [];}}
+  function readStores(){try{return JSON.parse(localStorage.getItem('mealflow_custom_stores')||'[]');}catch(e){return [];}}
+  Store.state.checkoutBasket=readCheckout();Store.state.customShoppingStores=readStores();
+  function saveCheckout(){try{localStorage.setItem('mealflow_checkout_basket',JSON.stringify(Store.state.checkoutBasket||[]));localStorage.setItem('mealflow_custom_stores',JSON.stringify(Store.state.customShoppingStores||[]));}catch(e){}}
+  function checkoutText(){return (Store.state.checkoutBasket||[]).map(x=>`${Math.max(1,Number(x.qty)||1)} × ${x.name}${x.unitWeight?' — '+x.unitWeight:''}`).join('\n');}
+  function renderCheckout(){const items=Store.state.checkoutBasket||[],count=$('orderCartItemCountLabel'),preview=$('orderCartItemsPreview');if(count)count.textContent=`${items.reduce((n,x)=>n+Math.max(1,Number(x.qty)||1),0)} units · ${items.length} products`;if(preview)preview.innerHTML=items.length?items.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-color);"><span>${safeText(x.name)} <b>× ${Math.max(1,Number(x.qty)||1)}</b>${x.unitWeight?` <small>(${safeText(x.unitWeight)})</small>`:''}</span><button class="btn btn-red btn-sm" onclick="removeCheckoutItem(${i})">Remove</button></div>`).join(''):'Checkout is empty. Move items from your Shopping List to begin.';const host=$('orderCartItemsPreview')?.parentElement;if(host&&!$('checkoutBasketActions')){const box=document.createElement('div');box.id='checkoutBasketActions';box.style.cssText='display:flex;flex-wrap:wrap;gap:7px;margin-top:10px';box.innerHTML='<button class="btn btn-amber btn-sm" onclick="moveShoppingToCheckout()">Move Shopping List to Checkout</button><button class="btn btn-blue btn-sm" onclick="restoreCheckoutToShopping()">Return items to Shopping List</button>';host.appendChild(box);}renderStoreChoices();}
+  function renderStoreChoices(){const modal=$('orderCartModal');if(!modal)return;let area=$('mealflowStoreChoices');if(!area){area=document.createElement('div');area.id='mealflowStoreChoices';area.style.cssText='margin:12px 0;padding:12px;background:#0f172a;border:1px solid var(--border-color);border-radius:8px';const body=modal.querySelector('.modal-scrollable-body');body?.appendChild(area);}const built=[['Instacart','https://www.instacart.ca/'],['Walmart Canada','https://www.walmart.ca/'],['PC Express / Superstore','https://www.realcanadiansuperstore.ca/'],['Uber Eats Grocery','https://www.ubereats.com/ca']];const custom=Store.state.customShoppingStores||[];area.innerHTML='<b style="color:#fff">Choose where to shop</b><p style="font-size:.72rem;color:var(--text-muted);margin:4px 0 9px">MealFlow will copy your basket and open the store. The store may require you to search/add items there; automatic cart import is not available yet.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">'+built.map(([n,u])=>`<button class="btn btn-blue btn-sm" onclick="openMealFlowStore(${JSON.stringify(u)},${JSON.stringify(n)})">${safeText(n)}</button>`).join('')+custom.map(x=>`<button class="btn btn-purple btn-sm" onclick="openMealFlowStore(${JSON.stringify(x.url)},${JSON.stringify(x.name)})">${safeText(x.name)}</button>`).join('')+'</div><div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><input id="newMealFlowStoreName" placeholder="Add store name" style="flex:1;min-width:110px"><input id="newMealFlowStoreUrl" placeholder="https://store.example" style="flex:2;min-width:160px"><button class="btn btn-green btn-sm" onclick="addMealFlowStore()">+ Add Store</button></div>'+(custom.length?'<div style="font-size:.68rem;color:var(--text-muted);margin-top:5px">Your added stores are saved on this device for now.</div>':'');}
+  window.openOrderCartModal=async function(){if((Store.state.shoppingData||[]).length)await window.moveShoppingToCheckout();renderCheckout();window.openModal('orderCartModal');};
+  window.moveShoppingToCheckout=async function(){const items=Array.isArray(Store.state.shoppingData)?Store.state.shoppingData:[];if(!items.length)return showToast('Your Shopping List is empty.');Store.state.checkoutBasket=[...(Store.state.checkoutBasket||[]),...items.map(x=>({...x}))];Store.state.shoppingData=[];saveCheckout();UI.renderShopping();await window.saveState();renderCheckout();showToast(`${items.length} product(s) moved to Checkout.`);};
+  window.removeCheckoutItem=async function(i){Store.state.checkoutBasket.splice(i,1);saveCheckout();await window.saveState();renderCheckout();};
+  window.restoreCheckoutToShopping=async function(){if(!Store.state.checkoutBasket?.length)return showToast('Checkout is empty.');Store.state.shoppingData=[...(Store.state.shoppingData||[]),...Store.state.checkoutBasket.map(x=>({...x}))];Store.state.checkoutBasket=[];saveCheckout();UI.renderShopping();await window.saveState();renderCheckout();showToast('Items returned to your Shopping List.');};
+  window.copyShoppingToClipboard=async function(){const value=checkoutText()||((Store.state.shoppingData||[]).map(x=>`${Math.max(1,Number(x.qty)||1)} × ${x.name}${x.unitWeight?' — '+x.unitWeight:''}`).join('\n'));if(!value)return showToast('There are no items to copy.');try{await navigator.clipboard.writeText(value);showToast('Checkout list copied.');}catch(e){const ta=document.createElement('textarea');ta.value=value;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Checkout list copied.');}};
+  window.exportShoppingList=window.copyShoppingToClipboard;
+  window.openMealFlowStore=async function(url,name){const tab=window.open(url,'_blank','noopener');if(!Store.state.checkoutBasket?.length){await window.moveShoppingToCheckout();if(!Store.state.checkoutBasket?.length){if(tab)tab.close();return;}}await window.copyShoppingToClipboard();showToast(`Opening ${name}. Your list is copied — paste or search items at the store.`);};
+  window.exportToStore=function(which){const map={instacart:['https://www.instacart.ca/','Instacart'],walmart:['https://www.walmart.ca/','Walmart Canada'],superstore:['https://www.realcanadiansuperstore.ca/','PC Express / Superstore']};const x=map[which];if(x)return window.openMealFlowStore(x[0],x[1]);};
+  window.addMealFlowStore=function(){const name=$('newMealFlowStoreName')?.value.trim(),url=$('newMealFlowStoreUrl')?.value.trim();if(!name||!url)return showToast('Enter a store name and website address.');let parsed;try{parsed=new URL(url);}catch(e){return showToast('Enter a valid website URL.');}if(parsed.protocol!=='https:')return showToast('Store links must use HTTPS.');if((Store.state.customShoppingStores||[]).some(x=>x.url===parsed.href))return showToast('That store is already saved.');Store.state.customShoppingStores.push({name,url:parsed.href});saveCheckout();if(window.saveState)window.saveState();renderStoreChoices();showToast(`${name} added to your store shortcuts.`);};
+
+  // Meal controls use the local recipe catalogue; no external AI service is implied.
+  window.cycleNextOptions = async function(){
+    const grid=$('mealOptionsGrid');if(grid)grid.innerHTML='';
+    if(typeof UI.renderMeals==='function')await UI.renderMeals();
+  };
+  window.triggerAIChef = async function(){
+    showToast('Chef is finding fresh meal ideas…');
+    await window.cycleNextOptions();
+  };
+  window.triggerLuckyChoice = async function(){
+    let pool=Array.isArray(Store.state.displayedMeals)?Store.state.displayedMeals:[];
+    if(!pool.length){await UI.renderMeals();pool=Store.state.displayedMeals||[];}
+    if(!pool.length)return showToast('No meal ideas are available right now.');
+    const meal=pool[Math.floor(Math.random()*pool.length)];
+    const grid=$('mealOptionsGrid');
+    if(grid){grid.innerHTML=buildMealCardMarkup(meal,false);}
+    showToast(`🎲 Tonight's lucky choice: ${meal.name}`);
+  };
+  window.showFamilyRecipe = function(){
+    const recipes=Array.isArray(Store.state.customRecipes)?Store.state.customRecipes:[];
+    if(!recipes.length){showToast('No saved Family Recipes yet. Add one from Starred / Custom Recipes.');return;}
+    const meal=recipes[Math.floor(Math.random()*recipes.length)];
+    const grid=$('mealOptionsGrid');if(grid)grid.innerHTML=buildMealCardMarkup(meal,false);
+    showToast(`🏠 Family recipe: ${meal.name}`);
+  };
+
+  // Household chat: top-level comments and nested replies stay attached to their parent.
+  window.handleCommentKey=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window.postComment();}};
+  window.postComment=async function(){
+    const input=$('newCommentInput'),text=(input?.value||'').trim();if(!text)return;
+    Store.state.chatData=Array.isArray(Store.state.chatData)?Store.state.chatData:[];
+    Store.state.chatData.unshift({id:'comment_'+Date.now(),author:currentName(),text,time:new Date().toLocaleString(),replies:[]});
+    input.value='';UI.renderChat();await window.saveState();
+  };
+  window.replyToComment=async function(id){
+    const input=$(`reply_${id}`),text=(input?.value||'').trim();if(!text)return;
+    const parent=(Store.state.chatData||[]).find(c=>String(c.id)===String(id));if(!parent)return;
+    if(!Array.isArray(parent.replies))parent.replies=[];
+    parent.replies.push({id:'reply_'+Date.now(),author:currentName(),text,time:new Date().toLocaleString()});
+    input.value='';UI.renderChat();await window.saveState();
+  };
+  const originalRenderChat=UI.renderChat;
+  UI.renderChat=function(){
+    const list=$('commentsList');if(!list)return;
+    const comments=Array.isArray(Store.state.chatData)?Store.state.chatData:[];
+    list.innerHTML=comments.map((c,i)=>{
+      if(!c.id)c.id='comment_'+i;
+      const id=safeText(c.id);
+      const replies=Array.isArray(c.replies)?c.replies:[];
+      return `<div class="list-item-row" style="flex-direction:column;align-items:stretch;gap:7px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;"><b class="badge-tag badge-author">👤 ${safeText(c.author||'Household')}</b><span style="font-size:.7rem;color:var(--text-muted)">${safeText(c.time||'')}</span></div>
+        <div style="white-space:pre-wrap;color:var(--text-main)">${safeText(c.text)}</div>
+        <div style="margin-left:14px;padding-left:10px;border-left:2px solid var(--border-color);display:flex;flex-direction:column;gap:6px;">
+          ${replies.map(r=>`<div style="background:rgba(100,116,139,.12);padding:7px;border-radius:7px;"><b style="font-size:.75rem;color:var(--accent-blue)">${safeText(r.author||'Household')}</b><span style="font-size:.68rem;color:var(--text-muted);margin-left:8px">${safeText(r.time||'')}</span><div style="white-space:pre-wrap;margin-top:3px">${safeText(r.text)}</div></div>`).join('')}
+          <div style="display:flex;gap:6px"><input id="reply_${id}" placeholder="Reply under this comment…" style="min-width:0;flex:1;padding:7px;border-radius:6px;border:1px solid var(--border-color);background:#0f172a;color:#fff"><button class="btn btn-sm btn-blue" onclick="replyToComment('${id}')">Reply</button></div>
+        </div></div>`;
+    }).join('')||'<div style="padding:16px;color:var(--text-muted)">No household comments yet.</div>';
+  };
+
+  // Pantry text import and local text/CSV file parsing. PDFs/images require OCR processing support.
+  window.togglePantryOCR=function(){const box=$('pantryOCRBox');if(box)box.style.display=box.style.display==='none'?'block':'none';};
+  function parseFoodLines(raw){return String(raw||'').split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).map(line=>{
+    const m=line.match(/^(\d+(?:\.\d+)?)\s*(?:x|×)?\s+(.+)$/i);
+    return {name:m?m[2].trim():line,qty:m?Math.max(1,Math.round(Number(m[1]))):1};
+  });}
+  window.processPantryOCR=async function(){
+    const text=$('pantryOCRText')?.value||'',rows=parseFoodLines(text);if(!rows.length)return showToast('Paste or enter receipt items first.');
+    rows.forEach(row=>{const old=Store.state.pantryData.find(p=>String(p.name).toLowerCase()===row.name.toLowerCase());if(old)old.qty=(Number(old.qty)||0)+row.qty;else Store.state.pantryData.unshift({name:row.name,qty:row.qty,unitWeight:'',category:'Pantry: Other',addedBy:currentName(),cal:'N/A',fat:'N/A',sugar:'N/A'});});
+    $('pantryOCRText').value='';$('pantryOCRBox').style.display='none';UI.renderPantry();await window.saveState();showToast(`${rows.length} pantry item(s) imported.`);
+  };
+  window.handlePantryFileUpload=async function(event){
+    const file=event?.target?.files?.[0];if(!file)return;
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    if(['txt','csv','json'].includes(ext)){
+      try{const raw=await file.text();let content=raw;if(ext==='json'){const parsed=JSON.parse(raw);content=Array.isArray(parsed)?parsed.map(x=>typeof x==='string'?x:x.name||'').join('\n'):raw;}
+        const rows=parseFoodLines(content);if(!rows.length)return showToast('No readable item names found in that file.');
+        rows.forEach(row=>{const old=Store.state.pantryData.find(p=>String(p.name).toLowerCase()===row.name.toLowerCase());if(old)old.qty=(Number(old.qty)||0)+row.qty;else Store.state.pantryData.unshift({name:row.name,qty:row.qty,unitWeight:'',category:'Pantry: Other',addedBy:currentName(),cal:'N/A',fat:'N/A',sugar:'N/A'});});
+        UI.renderPantry();await window.saveState();showToast(`${rows.length} item(s) imported from file.`);
+      }catch(e){showToast('Could not read that file.');}
+    }else if(ext==='pdf'||file.type.startsWith('image/')){
+      showToast('File selected. Image/PDF OCR needs an OCR service; this build cannot reliably extract receipt text locally.');
+    }
+    event.target.value='';
+  };
+
+  // Voice entry: browser-native speech recognition, when available.
+  window.startShoppingVoiceInput=function(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR)return showToast('Voice input is not supported in this browser. Try Edge or Chrome with microphone permission.');
+    const rec=new SR();rec.lang='en-CA';rec.interimResults=false;rec.maxAlternatives=1;
+    rec.onresult=async e=>{const phrase=e.results?.[0]?.[0]?.transcript||'';const rows=parseFoodLines(phrase);rows.forEach(row=>Store.state.shoppingData.push({name:row.name,qty:row.qty,category:'Grocery',addedBy:currentName()}));UI.renderShopping();await window.saveState();showToast('Added voice items to Shopping List.');};
+    rec.onerror=e=>showToast(`Voice input error: ${e.error||'microphone unavailable'}`);rec.start();
+  };
+  window.handleQuickShoppingVoice=window.startShoppingVoiceInput;
+  window.startVoiceDictate=function(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR)return showToast('Voice input is not supported in this browser.');
+    const status=$('voiceStatusMsg');if(status)status.textContent='Listening…';
+    const rec=new SR();rec.lang='en-CA';rec.interimResults=false;rec.maxAlternatives=1;
+    rec.onresult=e=>{const phrase=(e.results?.[0]?.[0]?.transcript||'').trim();const input=$('quickItemName');if(input)input.value=phrase;if(status)status.textContent=phrase?'Heard: '+phrase:'No speech detected';};
+    rec.onerror=e=>{if(status)status.textContent='Voice error: '+(e.error||'unavailable');};
+    rec.onend=()=>{if(status&&status.textContent==='Listening…')status.textContent='Tap 🎙️ to try again';};
+    try{rec.start();}catch(e){showToast('Could not start microphone. Check browser permissions.');}
+  };
+  window.submitQuickShopItem=async function(){
+    const input=$('quickItemName'),name=(input?.value||'').trim();if(!name)return showToast('Enter or dictate an item first.');
+    const existing=Store.state.shoppingData.find(x=>String(x.name||'').toLowerCase()===name.toLowerCase());
+    if(existing)existing.qty=Math.max(1,Number(existing.qty)||1)+1;
+    else Store.state.shoppingData.unshift({name,qty:1,category:'Grocery',addedBy:currentName()});
+    if(input)input.value='';UI.renderShopping();await window.saveState();window.closeModal('quickShoppingModal');showToast(`Added ${name} to Shopping List.`);
+  };
+
+  // Camera preview/capture. Actual AI recognition requires a secured server-side vision endpoint.
+  let cameraStream=null;
+  window.openLiveCameraScanner=async function(mode='pantry'){
+    Store.state.cameraScannerMode=mode;window.openModal('liveCameraModal');
+    const video=$('liveCameraVideo');if(!video)return;
+    try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:Store.state.cameraFacingMode||'environment'},audio:false});video.srcObject=cameraStream;await video.play();if($('cameraStatusIndicator'))$('cameraStatusIndicator').lastElementChild.textContent='Camera ready';}
+    catch(e){if($('cameraStatusIndicator'))$('cameraStatusIndicator').lastElementChild.textContent='Camera unavailable';showToast('Allow camera access in your browser, and use the secure HTTPS app address.');}
+  };
+  window.closeLiveCameraModal=function(){if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}const v=$('liveCameraVideo');if(v)v.srcObject=null;window.closeModal('liveCameraModal');};
+  window.toggleCameraFacingMode=async function(){Store.state.cameraFacingMode=Store.state.cameraFacingMode==='environment'?'user':'environment';window.closeLiveCameraModal();await window.openLiveCameraScanner(Store.state.cameraScannerMode||'pantry');};
+  window.captureLiveCameraFrame=async function(){showToast('Free label scanning is ready.');};
+
+  // Calendar view controls. Keep the existing schedule data and switch the renderer's view mode.
+  window.setCalView=function(mode,button){
+    Store.state.calendarViewMode=mode;document.querySelectorAll('.cal-view-group .cal-view-btn').forEach(b=>b.classList.remove('active'));if(button)button.classList.add('active');else document.querySelectorAll('.cal-view-group .cal-view-btn').forEach(b=>{if(b.textContent.trim().toLowerCase().startsWith(mode==='monthly'?'month':mode==='daily'?'day':'week'))b.classList.add('active');});
+    UI.renderCalendar(mode);
+  };
+  window.navigateCalendar=function(delta){Store.state.calendarOffset=(Number(Store.state.calendarOffset)||0)+Number(delta||0);UI.renderCalendar(Store.state.calendarViewMode);};
+  window.resetCalendarDate=function(){Store.state.calendarOffset=0;UI.renderCalendar(Store.state.calendarViewMode);};
+  // Guard against assigning a chef who is marked away.
+  const saveDayPlanOriginal=window.saveDayPlan;
+  window.saveDayPlan=async function(){
+    const item=Store.state.calendarSchedule[activeCalEditDayIndex];if(!item)return;
+    const selected=$('calModalChefSelect')?.value;
+    if(selected&&item.attendance?.[selected]==='away'){showToast(`${selected} is marked Away. Change attendance to Home or choose another chef.`);return;}
+    return saveDayPlanOriginal();
+  };
+  const openDayOriginal=window.openCalDayModal;
+  window.openCalDayModal=function(idx){openDayOriginal(idx);const item=Store.state.calendarSchedule[idx];const select=$('calModalChefSelect');if(select&&item?.attendance?.[select.value]==='away'){select.value=Object.keys(Store.state.userSettings||{}).find(n=>item.attendance?.[n]!=='away')||select.value;}};
+
+  // Preserve offline starred changes so a cloud pull does not overwrite them on reconnect.
+  const starOriginal=window.toggleStarDirect;
+  window.toggleStarDirect=function(name,elementId){starOriginal(name,elementId);try{localStorage.setItem('mealflow_starred_pending',JSON.stringify({ids:Store.state.starredIds,at:Date.now()}));}catch(e){}};
+  const applyCloudOriginal=applyCloudState;
+  applyCloudState=function(data,options={}){
+    let pending=null;try{pending=JSON.parse(localStorage.getItem('mealflow_starred_pending')||'null');}catch(e){}
+    if(pending&&Array.isArray(pending.ids)&&Array.isArray(data?.starredIds))data={...data,starredIds:pending.ids};
+    const changed=applyCloudOriginal(data,options);
+    if(pending&&navigator.onLine&&cloudSyncReady&&supabaseUser){setTimeout(async()=>{await window.saveState();try{localStorage.removeItem('mealflow_starred_pending');}catch(e){}},250);}
+    return changed;
+  };
+})()
+
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const keyOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const fromKey=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d,12);};
+  const plus=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+  const monday=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;};
+  const longDate=d=>d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const shortDate=d=>d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  function ensureDates(){
+    if(!Array.isArray(Store.state.calendarSchedule))Store.state.calendarSchedule=[];
+    const mon=monday(new Date()), map={Monday:0,Tuesday:1,Wednesday:2,Thursday:3,Friday:4,Saturday:5,Sunday:6};
+    Store.state.calendarSchedule.forEach((x,i)=>{if(!x||x.dateKey)return;let n=Number.isInteger(x.dayNum)?x.dayNum-1:map[x.dayName];if(!Number.isInteger(n)||n<0||n>6)n=i%7;const d=plus(mon,n);x.dateKey=keyOf(d);x.dayName=d.toLocaleDateString(undefined,{weekday:'long'});x.dayNum=d.getDate();});
+  }
+  function entryFor(date,create=false){
+    ensureDates();const k=typeof date==='string'?date:keyOf(date);
+    let x=Store.state.calendarSchedule.find(v=>v?.dateKey===k);
+    if(!x&&create){const d=fromKey(k);x={dateKey:k,dayName:d.toLocaleDateString(undefined,{weekday:'long'}),dayNum:d.getDate(),breakfast:'',lunch:'',dinner:'',snack:'',chef:'',notes:'',schedule:'',attendance:Object.fromEntries(Object.keys(Store.state.userSettings||{}).map(n=>[n,'home']))};Store.state.calendarSchedule.push(x);}
+    return x;
+  }
+  function renderCard(x,d){
+    const col=getPlannerUserColor(x.chef);
+    const meals=Store.state.plannerScheduleOnly?'':`<div class="cal-meal-line">🌅 ${esc(x.breakfast||'—')}</div><div class="cal-meal-line">☀️ ${esc(x.lunch||'—')}</div><div class="cal-meal-line" style="font-weight:800;">🌙 ${esc(x.dinner||'—')}</div>`;
+    const attendance=Object.entries(x.attendance||{}).map(([n,v])=>`<span style="color:${getPlannerUserColor(n)};font-weight:800;">${esc(n[0])}:${v==='away'?'Away':'Home'}</span>`).join(' · ');
+    return `<div class="cal-day-box" onclick="window.openCalDate('${x.dateKey}')" style="border-top:4px solid ${col};cursor:pointer;${keyOf(new Date())===x.dateKey?'outline:1px solid var(--accent-amber);':''}">
+      <div style="display:flex;justify-content:space-between;gap:5px;"><b style="color:var(--accent-amber);">${esc(d.toLocaleDateString(undefined,{weekday:'short'}))} ${d.getDate()}</b><span style="font-size:.62rem;color:${col};font-weight:900;">${esc(Store.state.plannerScheduleOnly?'HOUSEHOLD':x.chef||'Unassigned')}</span></div>
+      ${meals}<div style="font-size:.68rem;color:var(--text-muted);margin-top:6px;">📅 ${esc(x.schedule||'No commitments')}</div>
+      <div style="font-size:.65rem;margin-top:6px;">${attendance}</div>${x.notes?`<div style="font-size:.65rem;color:var(--accent-amber);margin-top:5px;">📝 ${esc(x.notes.slice(0,70))}</div>`:''}</div>`;
+  }
+  function renderCalendar(){
+    const el=$('calendarDisplayContainer');if(!el)return;ensureDates();
+    const mode=Store.state.calendarViewMode||'weekly',off=Number(Store.state.calendarOffset)||0,today=new Date();today.setHours(12,0,0,0);
+    let dates=[],title='';
+    if(mode==='monthly'){const m=new Date(today.getFullYear(),today.getMonth()+off,1,12);const first=monday(m);dates=Array.from({length:42},(_,i)=>plus(first,i));title=m.toLocaleDateString(undefined,{month:'long',year:'numeric'});}
+    else if(mode==='daily'){const d=plus(today,off);dates=[d];title=longDate(d);}
+    else{const first=plus(monday(today),off*7);dates=Array.from({length:7},(_,i)=>plus(first,i));title=`${shortDate(first)} – ${shortDate(plus(first,6))}`;}
+    if($('calCurrentRangeLabel'))$('calCurrentRangeLabel').textContent=title;
+    if(mode==='monthly'){
+      const month=fromKey(keyOf(new Date(today.getFullYear(),today.getMonth()+off,1)));
+      el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:8px;">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(v=>`<div style="text-align:center;font-size:.65rem;color:var(--text-muted);font-weight:800;">${v}</div>`).join('')}${dates.map(d=>{const x=entryFor(d,false)||{dateKey:keyOf(d),chef:'',breakfast:'',lunch:'',dinner:'',schedule:'',notes:'',attendance:{}};return `<div class="calendar-month-cell" style="min-width:0;${d.getMonth()!==month.getMonth()?'opacity:.45;':''}">${renderCard(x,d)}</div>`;}).join('')}</div>`;
+    }else el.innerHTML=`<div class="calendar-grid-weekly" style="${mode==='daily'?'grid-template-columns:minmax(0,1fr);':''}">${dates.map(d=>renderCard(entryFor(d,false)||{dateKey:keyOf(d),chef:'',breakfast:'',lunch:'',dinner:'',schedule:'',notes:'',attendance:{}},d)).join('')}</div>`;
+  }
+  UI.renderCalendar=renderCalendar;
+  window.setCalView=(mode,button)=>{Store.state.calendarViewMode=mode==='monthly'?'monthly':mode==='daily'?'daily':'weekly';document.querySelectorAll('.cal-view-group .cal-view-btn').forEach(b=>b.classList.remove('active'));if(button)button.classList.add('active');else document.querySelectorAll('.cal-view-group .cal-view-btn').forEach(b=>{const t=b.textContent.toLowerCase();if((mode==='monthly'&&t.includes('month'))||(mode==='daily'&&t.includes('day'))||(mode==='weekly'&&t.includes('week')))b.classList.add('active');});renderCalendar();};
+  window.navigateCalendar=delta=>{Store.state.calendarOffset=(Number(Store.state.calendarOffset)||0)+Number(delta||0);renderCalendar();};
+  window.resetCalendarDate=()=>{Store.state.calendarOffset=0;renderCalendar();};
+  window.openCalDate=k=>{const x=entryFor(k,true),i=Store.state.calendarSchedule.indexOf(x);window.openCalDayModal(i);if($('calModalDayTitle'))$('calModalDayTitle').textContent=`📅 ${longDate(fromKey(k))} Plan`;};
+  const openDay=window.openCalDayModal;
+  window.openCalDayModal=function(i){ensureDates();openDay(i);const x=Store.state.calendarSchedule[i];if(x?.dateKey&&$('calModalDayTitle'))$('calModalDayTitle').textContent=`📅 ${longDate(fromKey(x.dateKey))} Plan`;};
+  const saveDay=window.saveDayPlan;
+  window.saveDayPlan=async function(){const x=Store.state.calendarSchedule[activeCalEditDayIndex];if(!x)return;const chef=$('calModalChefSelect')?.value;if(chef&&x.attendance?.[chef]==='away')return showToast(`${chef} is marked Away. Change attendance or choose another chef.`);await saveDay();renderCalendar();};
+  const saveNote=window.saveDayNote;
+  window.saveDayNote=async function(){await saveNote();renderCalendar();};
+  ensureDates();
+
+  // Free, on-device OCR: no AI API key, no Edge Function, and no receipt upload.
+  let tesseractPromise=null,pdfjsPromise=null;
+  function loadScriptOnce(src,test){if(test&&test())return Promise.resolve();return new Promise((resolve,reject)=>{const found=[...document.scripts].find(x=>x.src===src);if(found){found.addEventListener('load',resolve,{once:true});found.addEventListener('error',reject,{once:true});if(test&&test())resolve();return;}const el=document.createElement('script');el.src=src;el.async=true;el.onload=resolve;el.onerror=()=>reject(Error('Could not load the free OCR library. Check your internet connection and try again.'));document.head.appendChild(el);});}
+  async function getTesseract(){if(!tesseractPromise)tesseractPromise=loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',()=>!!window.Tesseract).then(()=>window.Tesseract);return tesseractPromise;}
+  async function getPdfJs(){if(!pdfjsPromise)pdfjsPromise=loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',()=>!!window.pdfjsLib).then(()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';return window.pdfjsLib;});return pdfjsPromise;}
+  async function ocrCanvas(canvas){const T=await getTesseract();const result=await T.recognize(canvas,'eng',{logger:m=>{if(m.status==='recognizing text'&&$('aiScanReviewNote'))$('aiScanReviewNote').textContent=`Reading text… ${Math.round((m.progress||0)*100)}%`;}});return result?.data?.text||'';}
+  function parseReceiptText(raw){const lines=String(raw||'').split(/\r?\n/).map(x=>x.replace(/[|]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);const skip=/^(subtotal|sub total|total|tax|gst|hst|pst|change|cash|debit|visa|mastercard|thank you|balance|savings|discount|receipt|customer copy|transaction|approval|auth|date|time|cashier|store #|phone|www\.)/i;const out=[];for(const line of lines){if(line.length<3||skip.test(line)||/^[$\d.,\s-]+$/.test(line))continue;let qty=1,name=line;const q=line.match(/^([0-9]+)\s*(?:x|×)\s*(.+)$/i);if(q){qty=Math.max(1,parseInt(q[1],10)||1);name=q[2];}name=name.replace(/\s+[-$]?\d+\.\d{2}\s*$/,'').replace(/\s+\$\d+\.\d{2}.*$/,'').replace(/^\d{1,3}\s+/, '').trim();if(name.length<3||/^(?:#|sku|plu)\s*\d+/i.test(name))continue;if(!out.some(x=>x.name.toLowerCase()===name.toLowerCase()))out.push({name,qty,category:'Pantry: Other',confidence:null});}return out;}
+  async function scanFile(file){if(file.size>20*1024*1024)throw Error(`${file.name} is larger than 20 MB.`);let text='';if(/\.pdf$/i.test(file.name)||file.type==='application/pdf'){const pdf=await getPdfJs(),bytes=new Uint8Array(await file.arrayBuffer()),doc=await pdf.getDocument({data:bytes}).promise;for(let n=1;n<=doc.numPages;n++){if($('aiScanReviewNote'))$('aiScanReviewNote').textContent=`Reading PDF page ${n} of ${doc.numPages}…`;const page=await doc.getPage(n),vp=page.getViewport({scale:1.8}),canvas=document.createElement('canvas');canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;text+='\n'+await ocrCanvas(canvas);}}else{const img=new Image(),url=URL.createObjectURL(file);try{await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(Error('Could not open this image.'));img.src=url;});const canvas=document.createElement('canvas'),scale=Math.min(1,2400/img.naturalWidth);canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);text=await ocrCanvas(canvas);}finally{URL.revokeObjectURL(url);}}return {text,items:parseReceiptText(text)};}
+  function showScanItems(items,source){
+    Store.state.detectedAIScanItems=(items||[]).map((x,i)=>({name:String(x.name||'').trim(),qty:Math.max(1,Number(x.qty)||1),category:x.category||'Pantry: Other',confidence:x.confidence??null,notes:x.notes||'',selected:true})).filter(x=>x.name);
+    const panel=$('aiScanReviewPanel'),list=$('aiScanReviewItems');if(!panel||!list)return;
+    list.innerHTML=Store.state.detectedAIScanItems.map((x,i)=>`<div style="display:grid;grid-template-columns:22px minmax(0,1fr) 58px;gap:6px;align-items:center;background:#111c2e;border-radius:7px;padding:7px;"><input type="checkbox" checked onchange="setAIScanSelected(${i},this.checked)"><div><input value="${esc(x.name)}" onchange="setAIScanName(${i},this.value)" style="width:100%;background:#0b1220;color:#fff;border:1px solid #334155;border-radius:5px;padding:6px;"><small style="color:var(--text-muted);">${esc(x.category)}${x.confidence!==null?' · '+Math.round(Number(x.confidence)*100)+'%':''}</small></div><input type="number" min="1" value="${x.qty}" onchange="setAIScanQty(${i},this.value)" style="width:58px;background:#0b1220;color:#fff;border:1px solid #334155;border-radius:5px;padding:6px;"></div>`).join('');
+    panel.style.display='block';if($('aiScanReviewNote'))$('aiScanReviewNote').textContent=`${Store.state.detectedAIScanItems.length} suggestions from ${source}. Review names and quantities before adding.`;panel.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+  }
+  window.setAIScanSelected=(i,v)=>{if(Store.state.detectedAIScanItems[i])Store.state.detectedAIScanItems[i].selected=!!v;};
+  window.setAIScanName=(i,v)=>{if(Store.state.detectedAIScanItems[i])Store.state.detectedAIScanItems[i].name=String(v||'').trim();};
+  window.setAIScanQty=(i,v)=>{if(Store.state.detectedAIScanItems[i])Store.state.detectedAIScanItems[i].qty=Math.max(1,parseInt(v,10)||1);};
+  window.clearAIScanReview=()=>{Store.state.detectedAIScanItems=[];if($('aiScanReviewPanel'))$('aiScanReviewPanel').style.display='none';};
+  window.importAIScanResults=async()=>{const rows=Store.state.detectedAIScanItems.filter(x=>x.selected&&x.name);if(!rows.length)return showToast('Select at least one item.');const target=Store.state.cameraScannerMode==='shopping'?'shoppingData':'pantryData',list=Store.state[target];rows.forEach(x=>{const old=list.find(p=>String(p.name||'').toLowerCase()===x.name.toLowerCase());if(old)old.qty=(Number(old.qty)||0)+x.qty;else list.unshift({name:x.name,qty:x.qty,category:x.category||'Pantry: Other',addedBy:Store.state.currentProfile||'User'});});target==='shoppingData'?UI.renderShopping():UI.renderPantry();await window.saveState();window.clearAIScanReview();showToast(`${rows.length} item(s) added.`);};
+  window.handlePantryFileUpload=async event=>{const files=Array.from(event.target.files||[]);if(!files.length)return;const all=[];try{for(let i=0;i<files.length;i++){const f=files[i];if(/\.(txt|csv|json)$/i.test(f.name)){const raw=await f.text();all.push(...parseReceiptText(raw));}else{showToast(`Reading ${f.name} locally (${i+1}/${files.length})…`);const r=await scanFile(f);all.push(...r.items);}}if(!all.length)throw Error('No clear item names found. You can paste the receipt text and edit it manually.');Store.state.cameraScannerMode='pantry';showScanItems(all,`${files.length} local file scan(s)`);}catch(e){showToast(`Free scan failed: ${e.message}`);}finally{event.target.value='';}};
+  window.togglePantryOCR=()=>{const x=$('pantryOCRBox');if(x)x.style.display=x.style.display==='none'?'block':'none';};
+  window.processPantryOCR=()=>{const raw=$('pantryOCRText')?.value||'',items=raw.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).map(name=>({name,qty:1,category:'Pantry: Other',confidence:1}));if(!items.length)return showToast('Paste a receipt or food list first.');Store.state.cameraScannerMode='pantry';showScanItems(items,'pasted text');if($('pantryOCRText'))$('pantryOCRText').value='';};
+  let cameraStream=null;
+  window.openLiveCameraScanner=async mode=>{Store.state.cameraScannerMode=(mode==='barcode'?'shopping':(mode||'pantry'));window.openModal('liveCameraModal');if($('liveCameraModalTitle'))$('liveCameraModalTitle').textContent=Store.state.cameraScannerMode==='shopping'?'🛒 Shopping List Label Scan':'📷 Pantry & Fridge Label Scan';if($('cameraGuidanceText'))$('cameraGuidanceText').textContent='Aim at clear product labels or a receipt. This free scanner reads visible text; it does not recognize unlabelled objects. Tap Snap & Read Labels, then review the suggestions.';const v=$('liveCameraVideo');try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:Store.state.cameraFacingMode||'environment'},audio:false});v.srcObject=cameraStream;await v.play();if($('cameraStatusIndicator')?.lastElementChild)$('cameraStatusIndicator').lastElementChild.textContent='Camera ready';}catch(e){showToast('Allow camera access in your browser. MealFlow must be opened over HTTPS.');}};
+  window.closeLiveCameraModal=()=>{if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}if($('liveCameraVideo'))$('liveCameraVideo').srcObject=null;window.closeModal('liveCameraModal');};
+  window.toggleCameraFacingMode=async()=>{Store.state.cameraFacingMode=Store.state.cameraFacingMode==='environment'?'user':'environment';window.closeLiveCameraModal();await window.openLiveCameraScanner(Store.state.cameraScannerMode||'pantry');};
+  window.captureLiveCameraFrame=async()=>{const v=$('liveCameraVideo');if(!v?.videoWidth)return showToast('Start the camera first.');const c=document.createElement('canvas'),scale=Math.min(1,2200/v.videoWidth);c.width=Math.round(v.videoWidth*scale);c.height=Math.round(v.videoHeight*scale);c.getContext('2d').drawImage(v,0,0,c.width,c.height);const btn=$('cameraCaptureActionBtn');if(btn){btn.disabled=true;btn.textContent='Reading labels…';}try{const raw=await ocrCanvas(c),items=parseReceiptText(raw);if(!items.length)throw Error('No readable product labels were found. This free scanner reads visible text; it cannot identify unlabelled fruit or objects like a paid vision model. Try a closer photo of labels or use the receipt scanner.');showScanItems(items,'camera label OCR');window.closeLiveCameraModal();}catch(e){showToast(`Local scan: ${e.message}`);}finally{if(btn){btn.disabled=false;btn.textContent='📸 Snap & Read Labels';}}};
+
+  // Favourite operations are merged, not replaced by whichever device loads last.
+  function mergeOps(a,b){const m=new Map();[...(a||[]),...(b||[])].forEach(o=>{if(o?.opId&&o.id&&['add','remove'].includes(o.action))m.set(o.opId,o);});return [...m.values()].sort((x,y)=>(x.at||0)-(y.at||0)||x.opId.localeCompare(y.opId)).slice(-1000);}
+  function applyOps(base,ops){const ids=new Set((base||[]).filter(Boolean));mergeOps([],ops).forEach(o=>o.action==='add'?ids.add(o.id):ids.delete(o.id));return [...ids];}
+  function readOps(){try{const x=JSON.parse(localStorage.getItem('mealflow_starred_ops')||'[]');return Array.isArray(x)?x:[];}catch(e){return [];}}
+  function saveOps(){try{localStorage.setItem('mealflow_starred_ops',JSON.stringify(Store.state.starredOps||[]));}catch(e){}}
+  const persist=persistLocalState;persistLocalState=function(){persist();saveOps();};
+  const getPayload=getCloudPayload;getCloudPayload=function(){return {...getPayload(),starredOps:mergeOps([],Store.state.starredOps||[])};};
+  const applyCloud=applyCloudState;applyCloudState=function(d,o={}){if(!d)return false;const local=mergeOps(Store.state.starredOps||[],readOps()),remote=Array.isArray(d.starredOps)?d.starredOps:[],merged=mergeOps(local,remote),ids=applyOps([...(Store.state.starredIds||[]),...(d.starredIds||[])],merged);Store.state.starredOps=merged;const changed=applyCloud({...d,starredIds:ids},o);Store.state.starredIds=ids;persistLocalState();const remoteSet=new Set(remote.map(x=>x.opId));if(merged.some(x=>!remoteSet.has(x.opId))&&navigator.onLine&&cloudSyncReady&&supabaseUser)setTimeout(()=>window.saveState(),200);return changed;};
+  const star=window.toggleStarDirect;window.toggleStarDirect=function(name,id){const meal=Api.cache[id]||richOfflineDatabase.find(m=>m.id===id||m.name===name),target=String(meal?.id||id||'');const had=Store.state.starredIds.includes(target);star(name,id);const has=Store.state.starredIds.includes(target);if(target&&had!==has){Store.state.starredOps=mergeOps(Store.state.starredOps,[{opId:crypto.randomUUID?crypto.randomUUID():`op-${Date.now()}-${Math.random()}`,id:target,action:has?'add':'remove',at:Date.now(),by:Store.state.currentProfile||''}]);persistLocalState();window.saveState();}UI.renderFavorites();};
+  const originalLoad=window.loadState||loadState;window.loadState=function(){const r=originalLoad.apply(this,arguments);Store.state.starredOps=mergeOps(Store.state.starredOps||[],readOps());Store.state.starredIds=applyOps(Store.state.starredIds||[],Store.state.starredOps);persistLocalState();return r;};
+  window.addEventListener('online',()=>{if(Store.state.starredOps?.length&&cloudSyncReady&&supabaseUser)window.saveState();});
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   try { if (localStorage.getItem('mealflow_theme') === 'light') document.body.classList.add('light-mode'); } catch(e) {}
@@ -3404,13 +3700,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   const verTag = document.getElementById('headerVersionTag');
-  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.9";
+  if (verTag) verTag.innerText = window.APP_VERSION || "v0.9.14";
   const settingsVerTag = document.getElementById('settingsVersionTag');
-  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.9";
+  if (settingsVerTag) settingsVerTag.innerText = window.APP_VERSION || "v0.9.14";
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
 });
 </script>
+
+<script>
+/* MealFlow v0.9.16 persistence and UI refinements */
+(function(){
+  const originalPayload=window.getCloudPayload;
+  if(typeof originalPayload==='function')window.getCloudPayload=function(){const p=originalPayload();return {...p,checkoutBasket:Store.state.checkoutBasket||[],customShoppingStores:Store.state.customShoppingStores||[]};};
+  const originalApply=window.applyCloudState;
+  if(typeof originalApply==='function')window.applyCloudState=function(data,opts){if(data){if(Array.isArray(data.checkoutBasket))Store.state.checkoutBasket=data.checkoutBasket;if(Array.isArray(data.customShoppingStores))Store.state.customShoppingStores=data.customShoppingStores;try{localStorage.setItem('mealflow_checkout_basket',JSON.stringify(Store.state.checkoutBasket||[]));localStorage.setItem('mealflow_custom_stores',JSON.stringify(Store.state.customShoppingStores||[]));}catch(e){}}return originalApply(data,opts);};
+  const originalSave=window.saveState;
+  if(typeof originalSave==='function')window.saveState=async function(){try{localStorage.setItem('mealflow_checkout_basket',JSON.stringify(Store.state.checkoutBasket||[]));localStorage.setItem('mealflow_custom_stores',JSON.stringify(Store.state.customShoppingStores||[]));}catch(e){}return originalSave.apply(this,arguments);};
+  const ver='v0.9.16-free-scan-checkout';window.APP_VERSION=ver;try{localStorage.setItem('stus_app_version',ver);}catch(e){}
+  document.addEventListener('DOMContentLoaded',()=>{const h=document.getElementById('headerVersionTag'),v=document.getElementById('settingsVersionTag');if(h)h.textContent=ver;if(v)v.textContent=ver;});
+})();
+</script>
+
 </body>
 </html>
