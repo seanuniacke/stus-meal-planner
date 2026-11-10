@@ -2593,10 +2593,26 @@ function showMealFlowPasswordRecovery(){
       renderMeals: async function() {
         const grid = document.getElementById('mealOptionsGrid');
         if (!grid) return;
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--accent-amber); font-weight: bold;">👨‍🍳 Fetching recipes & photos...</div>`;
-        const selectedMeals = await Api.fetchDisplayMeals(Store);
+
+        // Render the bundled recipe database first. Do not wait for an API,
+        // image service, or network request before showing the meal cards.
+        const mealTime = String(Store.state.activeMealTime || 'Dinner').toLowerCase();
+        const cuisine = String(Store.state.activeCuisine || 'All').toLowerCase();
+        let pool = Array.isArray(richOfflineDatabase) ? richOfflineDatabase.slice() : [];
+        let matching = pool.filter(m => String(m.time || '').toLowerCase() === mealTime);
+        if (cuisine && cuisine !== 'all') {
+          const cuisineMatches = matching.filter(m => String(m.cuisine || '').toLowerCase() === cuisine);
+          if (cuisineMatches.length) matching = cuisineMatches;
+        }
+        if (!matching.length) matching = pool;
+        const selectedMeals = matching.slice(0, 3);
         Store.state.displayedMeals = selectedMeals;
-        grid.innerHTML = selectedMeals.map(m => buildMealCardMarkup(m, false)).join('');
+        grid.innerHTML = selectedMeals.length
+          ? selectedMeals.map(m => buildMealCardMarkup(m, false)).join('')
+          : '<div style="grid-column:1/-1;padding:18px;color:var(--text-muted)">No built-in meals are available. Please refresh the page.</div>';
+
+        // Online enhancement is deliberately disabled here. It previously
+        // replaced or delayed the local cards and was the source of blank states.
       },
       renderFavorites: function() {
         const container = document.getElementById('favoritesGrid');
@@ -3752,90 +3768,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
   window.handleMealImgError=function(img){if(!img)return true;let n=Number(img.dataset.photoFallbackIndex||0);if(n<photoFallbacks.length){img.dataset.photoFallbackIndex=String(n+1);img.src=photoFallbacks[n];img.classList.remove('meal-img-fallback');return true;}if(img.dataset.fallbackApplied==='1')return true;img.dataset.fallbackApplied='1';img.src=window.FALLBACK_FOOD_IMG;img.classList.add('meal-img-fallback');return true;};
   if(window.Api&&typeof Api.imgHtml==='function'){Api.imgHtml=function(mealObj,alt,extraClass){const safeAlt=String(alt||mealObj.name||'Meal').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cls=extraClass?`meal-card-img ${extraClass}`:'meal-card-img';const src=mealObj.img||photoFallbacks[0];return `<img src="${src}" alt="${safeAlt}" class="${cls}" loading="eager" referrerpolicy="no-referrer" onerror="window.handleMealImgError(this)">`;};}
-  const version='v0.9.17-checkout-pantry-images';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
+  const version='v0.9.19-meal-render-scope-fix';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
   document.addEventListener('DOMContentLoaded',()=>{const h=document.getElementById('headerVersionTag'),v=document.getElementById('settingsVersionTag');if(h)h.textContent=version;if(v)v.textContent=version;});
 })();
 
-/* v0.9.18: render built-in meal cards immediately; online recipes are optional enhancement. */
-(function(){
-  const localPhotoFallbacks = [
-    'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1547592180-85f173990554?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=900&auto=format&fit=crop&q=85'
-  ];
-  window.handleMealImgError = function(img){
-    if(!img) return true;
-    let n = Number(img.dataset.photoFallbackIndex || 0);
-    if(n < localPhotoFallbacks.length){
-      img.dataset.photoFallbackIndex = String(n+1);
-      img.src = localPhotoFallbacks[n];
-      return true;
-    }
-    img.onerror = null;
-    img.src = window.FALLBACK_FOOD_IMG;
-    img.classList.add('meal-img-fallback');
-    return true;
-  };
-  if(window.Api){
-    Api.imgHtml = function(mealObj, alt, extraClass){
-      const esc = v => String(v||'Meal').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-      const cls = extraClass ? `meal-card-img ${extraClass}` : 'meal-card-img';
-      const src = mealObj.img || localPhotoFallbacks[0] || window.FALLBACK_FOOD_IMG;
-      return `<img src="${esc(src)}" alt="${esc(alt||mealObj.name||mealObj.title||'Meal')}" class="${cls}" loading="eager" referrerpolicy="no-referrer" onerror="window.handleMealImgError(this)">`;
-    };
-  }
-  if(window.UI && typeof UI.renderMeals === 'function'){
-    UI.renderMeals = async function(){
-      const grid = document.getElementById('mealOptionsGrid');
-      if(!grid) return;
-      const mealTime = (Store.state.activeMealTime || 'Dinner');
-      const cuisine = (Store.state.activeCuisine || 'All');
-      const all = Array.isArray(window.richOfflineDatabase) ? window.richOfflineDatabase :
-                  (typeof richOfflineDatabase !== 'undefined' ? richOfflineDatabase : []);
-      let pool = all.filter(m => String(m.time||'').toLowerCase() === String(mealTime).toLowerCase());
-      if(cuisine && cuisine !== 'All'){
-        const filtered = pool.filter(m => String(m.cuisine||'').toLowerCase() === String(cuisine).toLowerCase());
-        if(filtered.length) pool = filtered;
-      }
-      // Show local meals before making any network request.
-      const shuffled = pool.slice().sort(() => Math.random() - 0.5);
-      const localMeals = shuffled.slice(0,3);
-      if(localMeals.length){
-        Store.state.displayedMeals = localMeals;
-        grid.innerHTML = localMeals.map(m => buildMealCardMarkup(m,false)).join('');
-      } else {
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:18px;color:var(--text-muted)">No built-in meals for this category yet. Try another meal time or cuisine.</div>';
-        Store.state.displayedMeals = [];
-      }
-      // Online recipes may improve the choices, but must never leave the page blank.
-      try{
-        const onlinePromise = Api.fetchDisplayMeals ? Api.fetchDisplayMeals(Store) : Promise.resolve([]);
-        const onlineMeals = await Promise.race([
-          onlinePromise,
-          new Promise(resolve => setTimeout(() => resolve([]), 6500))
-        ]);
-        if(Array.isArray(onlineMeals) && onlineMeals.length){
-          onlineMeals.forEach(m => { if(m && m.id) Api.cache[m.id] = m; });
-          Store.state.displayedMeals = onlineMeals.slice(0,3);
-          grid.innerHTML = Store.state.displayedMeals.map(m => buildMealCardMarkup(m,false)).join('');
-        }
-      }catch(err){
-        console.warn('MealFlow online recipe enhancement unavailable; keeping local meals.',err);
-      }
-    };
-  }
-  const version='v0.9.18-home-meal-render';
-  window.APP_VERSION=version;
-  try{localStorage.setItem('stus_app_version',version);}catch(e){}
-  document.addEventListener('DOMContentLoaded',()=>{
-    const h=document.getElementById('headerVersionTag');
-    const v=document.getElementById('settingsVersionTag');
-    if(h) h.textContent=version;
-    if(v) v.textContent=version;
-  });
-})();
+/* v0.9.19: meal renderer is fixed inside the original application scope. */
 
 </script>
 
