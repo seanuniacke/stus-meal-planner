@@ -411,7 +411,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
     <div id="tab-ideas" class="tab-content active">
       <div class="card">
         <div class="card-title">✨ Meal Ideas</div>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Select category, launch AI Chef, or pick world cravings</p>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Choose a meal time and cuisine, or pick world cravings</p>
 
 
 
@@ -426,7 +426,6 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         <div class="action-btn-row">
           <button class="btn btn-blue btn-sm" onclick="openModal('searchModal')">🔍 Search Recipe</button>
           <button class="btn btn-purple btn-sm" onclick="triggerLuckyChoice()">🎲 Lucky Choice</button>
-          <button class="btn btn-amber btn-sm" onclick="triggerAIChef()">⚡ AI Chef</button>
         </div>
 
         <div style="font-size:0.72rem; font-weight:700; margin-top:6px; color:var(--text-muted);">CUISINE / CRAVING FILTER:</div>
@@ -633,7 +632,6 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <div class="card-title">🛒 Shopping List & Ordering</div>
           <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
-            <button class="btn btn-purple btn-sm" onclick="openModal('quickShoppingModal')">⚡ Quick Voice / Barcode</button>
             <button class="btn btn-green btn-sm" onclick="openAddItemModal('shopping')">+ Add Item</button>
             <button class="btn btn-amber btn-sm" onclick="openOrderCartModal()" style="font-weight:800; box-shadow:0 2px 6px rgba(249,115,22,0.35);">🛒 Checkout</button>
           </div>
@@ -1189,30 +1187,6 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
     </div>
   </div>
 
-  <!-- QUICK ADD SHOPPING MODAL -->
-  <div id="quickShoppingModal" class="modal-overlay">
-    <div class="card modal-card-adaptive" style="max-width:440px;">
-      <div class="modal-sticky-header">
-        <div class="card-title">🛒 Quick Add to Shopping List</div>
-        <button class="btn btn-sm" onclick="closeModal('quickShoppingModal')">✕</button>
-      </div>
-      <div class="modal-scrollable-body">
-        <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px;">
-          <input type="text" id="quickItemName" placeholder="Item name (e.g. Chicken, Steak, Bread)..." style="flex:1; padding:10px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color);" onkeyup="if(event.key==='Enter') submitQuickShopItem()">
-          <button class="btn btn-blue" id="quickVoiceBtn" onclick="startVoiceDictate()" title="Voice Dictation" style="padding:10px; min-width:44px;">🎙️</button>
-          <button class="btn btn-purple" onclick="openLiveCameraScanner('barcode')" title="Scan Barcode with Camera" style="padding:10px; min-width:44px;">🏷️</button>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-          <span id="voiceStatusMsg" style="font-size:0.72rem; color:var(--text-muted);">Tap 🎙️ to talk or 🏷️ to scan</span>
-        </div>
-      </div>
-      <div class="modal-sticky-footer">
-        <button class="btn btn-sm" onclick="closeModal('quickShoppingModal')">✕ Close</button>
-        <button class="btn btn-green" onclick="submitQuickShopItem()">+ Add to List</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ADD ITEM MODAL (PANTRY / SHOPPING WITH ENTER SUBMISSION) -->
   <div id="addItemModal" class="modal-overlay">
     <div class="card modal-card-adaptive">
@@ -1224,7 +1198,13 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
         <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem;">
           <div>
             <label style="font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Search or Type Food Name:</label>
-            <input type="text" id="genericAddItemInput" placeholder="Type an item... (press Enter to Add)" oninput="handleSmartFoodInput(this.value)" style="width:100%; padding:10px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color);">
+            <input type="text" id="genericAddItemInput" placeholder="Type an item... or use Voice / Scan" oninput="handleSmartFoodInput(this.value)" onkeyup="if(event.key==='Enter') window.submitActiveTargetItem()" style="width:100%; padding:10px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color);">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <button type="button" class="btn btn-purple btn-sm" onclick="startAddItemVoice()">🎙️ Voice</button>
+              <button type="button" class="btn btn-blue btn-sm" onclick="document.getElementById('addItemPictureInput').click()">📷 Scan/Picture</button>
+            </div>
+            <input type="file" id="addItemPictureInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handleAddItemPicture(event)">
+            <div id="addItemVoiceStatus" style="font-size:.72rem;color:var(--text-muted);margin-top:5px;" aria-live="polite">Speak an item name, or take/select a clear photo of a receipt or product label.</div>
           </div>
 
           <div>
@@ -1645,7 +1625,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       { id: "l_3", name: "Carne Asada Street Tacos", cuisine: "MEXICAN", time: "Lunch", timeEst: "20 mins", cal: "510 kcal", img: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Flank Steak", reqQty:1, unit:"lb"}, {name:"Corn Tortillas", reqQty:6, unit:"count"}, {name:"Lime", reqQty:1, unit:"sliced"}], instructions: ["Sear marinated steak on high heat.", "Chop finely and serve on double warm tortillas."] },
       { id: "l_4", name: "Classic Chicken Caesar Wrap", cuisine: "AMERICAN", time: "Lunch", timeEst: "15 mins", cal: "480 kcal", img: "https://images.unsplash.com/photo-1528736235302-52922df5c122?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Chicken Breast", reqQty:1, unit:"cooked"}, {name:"Tortilla Wrap", reqQty:1, unit:"large"}, {name:"Parmesan", reqQty:2, unit:"tbsp"}], instructions: ["Toss grilled chicken with romaine and Caesar dressing.", "Roll tightly in flour tortilla."] },
       { id: "d_1", name: "Wild Pacific Maple-Glazed Salmon", cuisine: "CANADIAN", time: "Dinner", timeEst: "25 mins", cal: "540 kcal", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Salmon Fillets", reqQty:2, unit:"fillets"}, {name:"Pure Maple Syrup", reqQty:1, unit:"bottle"}, {name:"Garlic", reqQty:2, unit:"cloves"}, {name:"Soy Sauce", reqQty:1, unit:"tbsp"}], instructions: ["Whisk maple syrup, minced garlic, soy sauce, and black pepper.", "Sear salmon skin-down in an oven-safe skillet for 4 minutes.", "Pour maple reduction over fillets and baste.", "Bake at 400°F for 10-12 minutes until glazed and flaky."] },
-      { id: "d_2", name: "Jamaican Curry Shrimp Recipe", cuisine: "JAMAICAN", time: "Dinner", timeEst: "30 mins", cal: "520 kcal", img: "https://www.themealdb.com/images/media/meals/swttys1511385853.jpg", ingredients: [{name:"Jumbo Shrimp", reqQty:1, unit:"lb"}, {name:"Jamaican Curry Powder", reqQty:2, unit:"tbsp"}, {name:"Yellow Onions", reqQty:1, unit:"medium"}, {name:"Garlic", reqQty:3, unit:"cloves"}, {name:"Sweet Bell Pepper", reqQty:1, unit:"sliced"}, {name:"Olive Oil", reqQty:2, unit:"tbsp"}], instructions: ["Clean, peel, and season shrimp with half of the curry powder and salt.", "Sauté chopped onions, garlic, and bell peppers in olive oil.", "Stir in remaining curry powder and bloom for 1 minute until fragrant.", "Add shrimp and cook for 4-5 minutes until plump and coated in rich sauce."] },
+      { id: "d_2", name: "Jamaican Curry Shrimp Recipe", cuisine: "JAMAICAN", time: "Dinner", timeEst: "30 mins", cal: "520 kcal", img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Jamaican_curry_shrimp.jpg/960px-Jamaican_curry_shrimp.jpg", ingredients: [{name:"Jumbo Shrimp", reqQty:1, unit:"lb"}, {name:"Jamaican Curry Powder", reqQty:2, unit:"tbsp"}, {name:"Yellow Onions", reqQty:1, unit:"medium"}, {name:"Garlic", reqQty:3, unit:"cloves"}, {name:"Sweet Bell Pepper", reqQty:1, unit:"sliced"}, {name:"Olive Oil", reqQty:2, unit:"tbsp"}], instructions: ["Clean, peel, and season shrimp with half of the curry powder and salt.", "Sauté chopped onions, garlic, and bell peppers in olive oil.", "Stir in remaining curry powder and bloom for 1 minute until fragrant.", "Add shrimp and cook for 4-5 minutes until plump and coated in rich sauce."] },
       { id: "d_3", name: "Creamy Garlic Mushroom Risotto", cuisine: "ITALIAN", time: "Dinner", timeEst: "35 mins", cal: "490 kcal", img: "https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Arborio Rice", reqQty:1, unit:"cup"}, {name:"Mushrooms", reqQty:1, unit:"basket"}, {name:"Parmesan", reqQty:1, unit:"cup"}], instructions: ["Toast arborio rice.", "Add warm broth gradually while stirring.", "Finish with butter and shaved parmesan."] },
       { id: "d_4", name: "French-Canadian Tourtière Meat Pie", cuisine: "CANADIAN", time: "Dinner", timeEst: "50 mins", cal: "590 kcal", img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ground Beef", reqQty:1, unit:"lb"}, {name:"Pie Crust", reqQty:2, unit:"sheets"}, {name:"Spices", reqQty:1, unit:"tsp"}], instructions: ["Simmer seasoned ground meat with onions.", "Fill pastry and bake at 375°F until golden."] },
       { id: "d_5", name: "Grilled Western Ribeye Steak", cuisine: "AMERICAN", time: "Dinner", timeEst: "20 mins", cal: "640 kcal", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Ribeye Steak", reqQty:2, unit:"steaks"}, {name:"Garlic Butter", reqQty:2, unit:"tbsp"}], instructions: ["Sear on high cast iron skillet 4 mins each side.", "Baste with garlic herb butter."] },
@@ -1654,7 +1634,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
     ];
 
     const masterGuideTitles = [
-      "1. Meal Recommendation Engine", "2. AI Chef Auto-Generator", "3. Lucky Choice Surprise",
+      "1. Meal Recommendation Engine", "2. Meal Discovery Options", "3. Lucky Choice Surprise",
       "4. Global Recipe Search", "5. Planner & Chef Scheduling", "6. Family Schedule & OCR Scan",
       "7. Calendar Export & Push Alerts", "8. Hands-Free Audio Reading", "9. Live AI Cooking Help",
       "10. Pantry Management & Reorder", "11. OCR Receipt & Batch Importer", "12. Deficit Shopping Calculations",
@@ -2457,6 +2437,7 @@ function showMealFlowPasswordRecovery(){
       return `
       <div class="meal-card ${hasAllergyAlert ? 'allergy-alert' : ''}" id="card-${mealId}">
         ${Api.imgHtml(meal, mealName, isFavSection ? 'fav-thumb' : '')}
+        ${meal.id === 'd_2' ? '<div style="font-size:.62rem;color:var(--text-muted);padding:2px 10px;">Photo: Xaymacan · <a href="https://commons.wikimedia.org/wiki/File:Jamaican_curry_shrimp.jpg" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></div>' : ''}
         <div class="meal-card-body">
           <div style="flex:1;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
@@ -2605,7 +2586,12 @@ function showMealFlowPasswordRecovery(){
           if (cuisineMatches.length) matching = cuisineMatches;
         }
         if (!matching.length) matching = pool;
-        const selectedMeals = matching.slice(0, 3);
+        // Shuffle the full matching pool and avoid repeating the previous set when possible.
+        const previousIds = new Set((Store.state.displayedMeals || []).map(m => String(m.id || m.name)));
+        const shuffled = matching.slice().sort(() => Math.random() - 0.5);
+        let fresh = shuffled.filter(m => !previousIds.has(String(m.id || m.name)));
+        if (fresh.length < Math.min(3, matching.length)) fresh = shuffled;
+        const selectedMeals = fresh.slice(0, 3);
         Store.state.displayedMeals = selectedMeals;
         grid.innerHTML = selectedMeals.length
           ? selectedMeals.map(m => buildMealCardMarkup(m, false)).join('')
@@ -3426,10 +3412,6 @@ window.signOutCloudSync = async function() {
     const grid=$('mealOptionsGrid');if(grid)grid.innerHTML='';
     if(typeof UI.renderMeals==='function')await UI.renderMeals();
   };
-  window.triggerAIChef = async function(){
-    showToast('Chef is finding fresh meal ideas…');
-    await window.cycleNextOptions();
-  };
   window.triggerLuckyChoice = async function(){
     let pool=Array.isArray(Store.state.displayedMeals)?Store.state.displayedMeals:[];
     if(!pool.length){await UI.renderMeals();pool=Store.state.displayedMeals||[];}
@@ -3504,33 +3486,6 @@ window.signOutCloudSync = async function() {
       showToast('File selected. Image/PDF OCR needs an OCR service; this build cannot reliably extract receipt text locally.');
     }
     event.target.value='';
-  };
-
-  // Voice entry: browser-native speech recognition, when available.
-  window.startShoppingVoiceInput=function(){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR)return showToast('Voice input is not supported in this browser. Try Edge or Chrome with microphone permission.');
-    const rec=new SR();rec.lang='en-CA';rec.interimResults=false;rec.maxAlternatives=1;
-    rec.onresult=async e=>{const phrase=e.results?.[0]?.[0]?.transcript||'';const rows=parseFoodLines(phrase);rows.forEach(row=>Store.state.shoppingData.push({name:row.name,qty:row.qty,category:'Grocery',addedBy:currentName()}));UI.renderShopping();await window.saveState();showToast('Added voice items to Shopping List.');};
-    rec.onerror=e=>showToast(`Voice input error: ${e.error||'microphone unavailable'}`);rec.start();
-  };
-  window.handleQuickShoppingVoice=window.startShoppingVoiceInput;
-  window.startVoiceDictate=function(){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR)return showToast('Voice input is not supported in this browser.');
-    const status=$('voiceStatusMsg');if(status)status.textContent='Listening…';
-    const rec=new SR();rec.lang='en-CA';rec.interimResults=false;rec.maxAlternatives=1;
-    rec.onresult=e=>{const phrase=(e.results?.[0]?.[0]?.transcript||'').trim();const input=$('quickItemName');if(input)input.value=phrase;if(status)status.textContent=phrase?'Heard: '+phrase:'No speech detected';};
-    rec.onerror=e=>{if(status)status.textContent='Voice error: '+(e.error||'unavailable');};
-    rec.onend=()=>{if(status&&status.textContent==='Listening…')status.textContent='Tap 🎙️ to try again';};
-    try{rec.start();}catch(e){showToast('Could not start microphone. Check browser permissions.');}
-  };
-  window.submitQuickShopItem=async function(){
-    const input=$('quickItemName'),name=(input?.value||'').trim();if(!name)return showToast('Enter or dictate an item first.');
-    const existing=Store.state.shoppingData.find(x=>String(x.name||'').toLowerCase()===name.toLowerCase());
-    if(existing)existing.qty=Math.max(1,Number(existing.qty)||1)+1;
-    else Store.state.shoppingData.unshift({name,qty:1,category:'Grocery',addedBy:currentName()});
-    if(input)input.value='';UI.renderShopping();await window.saveState();window.closeModal('quickShoppingModal');showToast(`Added ${name} to Shopping List.`);
   };
 
   // Camera preview/capture. Actual AI recognition requires a secured server-side vision endpoint.
@@ -3639,6 +3594,35 @@ window.signOutCloudSync = async function() {
   async function ocrCanvas(canvas){const T=await getTesseract();const result=await T.recognize(canvas,'eng',{logger:m=>{if(m.status==='recognizing text'&&$('aiScanReviewNote'))$('aiScanReviewNote').textContent=`Reading text… ${Math.round((m.progress||0)*100)}%`;}});return result?.data?.text||'';}
   function parseReceiptText(raw){const lines=String(raw||'').split(/\r?\n/).map(x=>x.replace(/[|]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);const skip=/^(subtotal|sub total|total|tax|gst|hst|pst|change|cash|debit|visa|mastercard|thank you|balance|savings|discount|receipt|customer copy|transaction|approval|auth|date|time|cashier|store #|phone|www\.)/i;const out=[];for(const line of lines){if(line.length<3||skip.test(line)||/^[$\d.,\s-]+$/.test(line))continue;let qty=1,name=line;const q=line.match(/^([0-9]+)\s*(?:x|×)\s*(.+)$/i);if(q){qty=Math.max(1,parseInt(q[1],10)||1);name=q[2];}name=name.replace(/\s+[-$]?\d+\.\d{2}\s*$/,'').replace(/\s+\$\d+\.\d{2}.*$/,'').replace(/^\d{1,3}\s+/, '').trim();if(name.length<3||/^(?:#|sku|plu)\s*\d+/i.test(name))continue;if(!out.some(x=>x.name.toLowerCase()===name.toLowerCase()))out.push({name,qty,category:'Pantry: Other',confidence:null});}return out;}
   async function scanFile(file){if(file.size>20*1024*1024)throw Error(`${file.name} is larger than 20 MB.`);let text='';if(/\.pdf$/i.test(file.name)||file.type==='application/pdf'){const pdf=await getPdfJs(),bytes=new Uint8Array(await file.arrayBuffer()),doc=await pdf.getDocument({data:bytes}).promise;for(let n=1;n<=doc.numPages;n++){if($('aiScanReviewNote'))$('aiScanReviewNote').textContent=`Reading PDF page ${n} of ${doc.numPages}…`;const page=await doc.getPage(n),vp=page.getViewport({scale:1.8}),canvas=document.createElement('canvas');canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;text+='\n'+await ocrCanvas(canvas);}}else{const img=new Image(),url=URL.createObjectURL(file);try{await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(Error('Could not open this image.'));img.src=url;});const canvas=document.createElement('canvas'),scale=Math.min(1,2400/img.naturalWidth);canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);text=await ocrCanvas(canvas);}finally{URL.revokeObjectURL(url);}}return {text,items:parseReceiptText(text)};}
+  // Add Item modal: native mobile camera/photo picker + on-device OCR.
+  window.startAddItemVoice=function(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const status=$('addItemVoiceStatus'),input=$('genericAddItemInput');
+    if(!SR){if(status)status.textContent='Voice input is not supported here. Try Edge or Chrome and allow microphone access.';return showToast('Voice input is not supported in this browser.');}
+    const rec=new SR();rec.lang='en-CA';rec.interimResults=false;rec.maxAlternatives=1;
+    if(status)status.textContent='Listening… speak the item name now.';
+    rec.onresult=e=>{const phrase=String(e.results?.[0]?.[0]?.transcript||'').trim();if(input){input.value=phrase;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();}if(status)status.textContent=phrase?`Heard: ${phrase} — review it, then tap Add Item.`:'No speech detected. Tap Voice to try again.';};
+    rec.onerror=e=>{if(status)status.textContent=`Voice error: ${e.error||'microphone unavailable'}`;showToast(`Voice input error: ${e.error||'microphone unavailable'}`);};
+    rec.onend=()=>{if(status&&status.textContent==='Listening… speak the item name now.')status.textContent='No speech detected. Tap Voice to try again.';};
+    try{rec.start();}catch(e){if(status)status.textContent='Could not start microphone. Check browser permissions.';showToast('Could not start microphone. Check browser permissions.');}
+  };
+  window.handleAddItemPicture=async function(event){
+    const files=Array.from(event.target.files||[]);if(!files.length)return;
+    const status=$('addItemVoiceStatus'),target=Store.state.activeAddItemContext==='pantry'?'pantryData':'shoppingData';
+    try{
+      const found=[];
+      for(let i=0;i<files.length;i++){if(status)status.textContent=`Reading photo ${i+1} of ${files.length} on this device…`;const result=await scanFile(files[i]);found.push(...result.items);}
+      const unique=[];const seen=new Set();found.forEach(x=>{const k=String(x.name||'').toLowerCase();if(k&&!seen.has(k)){seen.add(k);unique.push(x);}});
+      if(!unique.length)throw Error('No readable item names found. Take a closer, well-lit photo of a receipt or printed product label. Photos of unlabelled food objects cannot be identified by this free text scanner.');
+      const names=unique.map(x=>`${x.qty>1?x.qty+' × ':''}${x.name}`).join('\n');
+      if(!window.confirm(`MealFlow read these item(s):\n\n${names}\n\nAdd them to your ${target==='pantryData'?'Pantry':'Shopping List'}?`))return;
+      const list=Store.state[target];
+      unique.forEach(x=>{const name=String(x.name).trim();const old=list.find(p=>String(p.name||'').toLowerCase()===name.toLowerCase());if(old)old.qty=(Number(old.qty)||0)+(Number(x.qty)||1);else list.unshift({name,qty:Math.max(1,Number(x.qty)||1),unitWeight:'',category:target==='shoppingData'?'Grocery':(x.category||'Pantry: Other'),addedBy:Store.state.currentProfile||'User'});});
+      if(target==='pantryData')UI.renderPantry();else UI.renderShopping();await window.saveState();
+      if(status)status.textContent=`Added ${unique.length} item(s) from photo.`;showToast(`Added ${unique.length} item(s) from photo to ${target==='pantryData'?'Pantry':'Shopping List'}.`);
+    }catch(e){if(status)status.textContent=`Scan did not complete: ${e.message}`;showToast(`Scan/Picture: ${e.message}`);}finally{event.target.value='';}
+  };
+
   function showScanItems(items,source){
     Store.state.detectedAIScanItems=(items||[]).map((x,i)=>({name:String(x.name||'').trim(),qty:Math.max(1,Number(x.qty)||1),category:x.category||'Pantry: Other',confidence:x.confidence??null,notes:x.notes||'',selected:true})).filter(x=>x.name);
     const panel=$('aiScanReviewPanel'),list=$('aiScanReviewItems');if(!panel||!list)return;
@@ -3758,17 +3742,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if(typeof basePersist==='function')window.persistLocalState=function(){basePersist.apply(this,arguments);try{localStorage.setItem('mealflow_checkout_basket',JSON.stringify(Store.state.checkoutBasket||[]));localStorage.setItem('mealflow_custom_stores',JSON.stringify(Store.state.customShoppingStores||[]));}catch(e){}};
   const baseSave=window.saveState;
   if(typeof baseSave==='function')window.saveState=async function(){try{localStorage.setItem('mealflow_checkout_basket',JSON.stringify(Store.state.checkoutBasket||[]));localStorage.setItem('mealflow_custom_stores',JSON.stringify(Store.state.customShoppingStores||[]));}catch(e){}return baseSave.apply(this,arguments);};
-  // Use actual recipe photos where supplied; if a remote photo fails, try known food-photo fallbacks before the generic placeholder.
-  const photoFallbacks=[
-    'https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg',
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&auto=format&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=900&auto=format&fit=crop&q=85'
-  ];
-  window.handleMealImgError=function(img){if(!img)return true;let n=Number(img.dataset.photoFallbackIndex||0);if(n<photoFallbacks.length){img.dataset.photoFallbackIndex=String(n+1);img.src=photoFallbacks[n];img.classList.remove('meal-img-fallback');return true;}if(img.dataset.fallbackApplied==='1')return true;img.dataset.fallbackApplied='1';img.src=window.FALLBACK_FOOD_IMG;img.classList.add('meal-img-fallback');return true;};
-  if(window.Api&&typeof Api.imgHtml==='function'){Api.imgHtml=function(mealObj,alt,extraClass){const safeAlt=String(alt||mealObj.name||'Meal').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cls=extraClass?`meal-card-img ${extraClass}`:'meal-card-img';const src=mealObj.img||photoFallbacks[0];return `<img src="${src}" alt="${safeAlt}" class="${cls}" loading="eager" referrerpolicy="no-referrer" onerror="window.handleMealImgError(this)">`;};}
-  const version='v0.9.20-runtime-boundary-fix';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
+  // Recipe photos must never fall back to an unrelated food image.
+  window.handleMealImgError=function(img){if(!img||img.dataset.fallbackApplied==='1')return true;img.dataset.fallbackApplied='1';img.removeAttribute('onerror');img.src=window.FALLBACK_FOOD_IMG;img.classList.add('meal-img-fallback');return true;};
+  if(window.Api&&typeof Api.imgHtml==='function'){Api.imgHtml=function(mealObj,alt,extraClass){const safeAlt=String(alt||mealObj.name||'Meal').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cls=extraClass?`meal-card-img ${extraClass}`:'meal-card-img';const src=mealObj.img||window.FALLBACK_FOOD_IMG;return `<img src="${src}" alt="${safeAlt}" class="${cls}" loading="eager" referrerpolicy="no-referrer" onerror="window.handleMealImgError(this)">`;};}
+  const version='v0.9.21-meal-options-scan-voice';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
   document.addEventListener('DOMContentLoaded',()=>{const h=document.getElementById('headerVersionTag'),v=document.getElementById('settingsVersionTag');if(h)h.textContent=version;if(v)v.textContent=version;});
 })();
 
