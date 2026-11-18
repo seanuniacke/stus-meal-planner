@@ -262,7 +262,7 @@ console.log("Service worker temporarily disabled for Supabase migration.");
     .analytics-bar { flex: 1; background: linear-gradient(to top, #3b82f6, #8b5cf6); border-radius: 4px 4px 0 0; transition: height 0.4s ease, background 0.2s; min-width: 12px; position: relative; cursor: pointer; }
     .analytics-bar:hover, .analytics-bar.active { background: var(--accent-amber); }
     .guide-layout { display: flex; gap: 14px; height: 70vh; min-height: 480px; }
-    .guide-sidebar { width: 260px; border-right: 1px solid var(--border-color); overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 4px; }
+    .guide-sidebar { width: 285px; flex:0 0 285px; border-right: 1px solid var(--border-color); overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 4px; }
     .guide-content { flex: 1; display: flex; flex-direction: column; position: relative; overflow-y: auto; padding-left: 6px; }
     .guide-mockup-screen { position: relative; width: 100%; height: 240px; background: #090d16; border-radius: 8px; border: 1.5px solid var(--border-color); margin-bottom: 10px; overflow: hidden; display: flex; flex-direction: column; }
     .guide-highlight-bubble { position: absolute; background: #0f172a; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: bold; box-shadow: 0 4px 16px rgba(0,0,0,0.85); max-width: 200px; z-index: 20; border: 2px solid var(--accent-amber); transform: translate(-50%, -50%); }
@@ -326,7 +326,7 @@ body.light-mode .analytics-chart-bar-wrap{background:#f8fafc;border-bottom-color
 body.light-mode .guide-sidebar{background:#f8fafc;}
 body.light-mode .guide-mockup-screen{background:#fff!important;color:#0f172a!important;border-color:#cbd5e1!important;}
 body.light-mode .guide-sidebar button{background:#fff!important;color:#0f172a!important;}
-@media(max-width:800px){.resource-link-grid{grid-template-columns:1fr}.guide-layout{height:78vh!important;min-height:520px!important;flex-direction:column}.guide-sidebar{width:auto!important;border-right:0!important;border-bottom:1px solid var(--border-color);max-height:190px;padding-right:0;padding-bottom:8px}.guide-content{min-height:360px}.modal-card-adaptive{max-width:96vw!important;}}
+@media(max-width:800px){.guide-sidebar{flex:0 0 auto!important}.guide-mockup-screen{height:300px!important}.guide-content{overflow:visible!important}.resource-link-grid{grid-template-columns:1fr}.guide-layout{height:78vh!important;min-height:520px!important;flex-direction:column}.guide-sidebar{width:auto!important;border-right:0!important;border-bottom:1px solid var(--border-color);max-height:190px;padding-right:0;padding-bottom:8px}.guide-content{min-height:360px}.modal-card-adaptive{max-width:96vw!important;}}
 
 /* v1.0.1 mobile header, direct-list routing and light-theme repairs */
 @media (max-width:767px){
@@ -1048,7 +1048,7 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
             <button class="btn btn-purple btn-sm" onclick="openHouseholdManager()">🏠 Manage Household</button>
           </div>
           <div class="settings-nav-tile" onclick="openGuideModal(); closeModal('settingsModal');" style="border-color:var(--accent-purple);">
-            <div style="font-size:0.88rem; color:#fff; display:flex; align-items:center; gap:8px;"><span>📘</span> <span>Master User Guide (30 Features)</span></div>
+            <div style="font-size:0.88rem; color:#fff; display:flex; align-items:center; gap:8px;"><span>📘</span> <span>Master User Guide (30 Topics • 90 Steps)</span></div>
             <span style="color:var(--accent-purple);">❯</span>
           </div>
 
@@ -1399,39 +1399,38 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
 
   <!-- MASTER USER GUIDE MODAL -->
   <div id="guideModal" class="modal-overlay">
-    <div class="card modal-card-adaptive" style="max-width:1280px;">
-      <div class="modal-sticky-header">
-        <div style="font-size:1.15rem; font-weight:bold; color:#fff;">📘 Master Onboarding & User Guide (30 Features)</div>
-        <button class="btn btn-sm" onclick="closeModal('guideModal')">✕</button>
+    <div class="card modal-card-adaptive" style="max-width:1320px;width:96vw;">
+      <div class="modal-sticky-header" style="align-items:center;gap:12px;">
+        <div style="min-width:0;flex:1;"><div style="font-size:1.15rem;font-weight:800;color:#fff;">📘 MealFlow Master Guide</div><div id="guideChapterLabel" style="font-size:.72rem;color:var(--text-muted);margin-top:3px;">Welcome • Learn MealFlow step by step</div></div>
+        <button class="btn btn-sm" onclick="closeGuideModal()">✕</button>
       </div>
       <div class="modal-scrollable-body" style="padding:0;">
+        <div style="padding:13px 16px 8px;background:var(--card-bg);border-bottom:1px solid var(--border-color);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.76rem;color:var(--text-muted);"><span id="guideOverallProgressText">0 of 30 topics completed</span><span id="guideOverallPercent">0%</span></div>
+          <div style="height:6px;background:var(--border-color);border-radius:9px;overflow:hidden;margin-top:7px;"><div id="guideOverallProgress" style="height:100%;width:0%;background:var(--accent-green);transition:width .2s;"></div></div>
+        </div>
         <div class="guide-layout" style="padding:14px;">
           <div class="guide-sidebar">
-            <input type="text" id="guideSearchInput" placeholder="🔍 Filter 30 features..." oninput="filterGuideFeatures(this.value)" style="width:100%; padding:8px; border-radius:6px; background:#0f172a; color:#fff; border:1px solid var(--border-color); font-size:0.78rem; margin-bottom:8px;">
-            <div id="guideSidebarList" style="display:flex; flex-direction:column; gap:4px;"></div>
+            <input type="search" id="guideSearchInput" placeholder="🔍 Search guide topics..." oninput="filterGuideFeatures(this.value)" style="width:100%;padding:9px;border-radius:7px;background:#0f172a;color:#fff;border:1px solid var(--border-color);font-size:.78rem;margin-bottom:8px;">
+            <div id="guideSidebarList" style="display:flex;flex-direction:column;gap:4px;"></div>
           </div>
           <div class="guide-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <h3 id="guideFeatureTitle" style="color:var(--accent-amber); font-size:1.05rem;">Title</h3>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span id="guideSlideCounter" style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">Step 1 of 3</span>
-                <button class="btn btn-purple btn-sm" onclick="speakGuideSlide()">🔊 Read Aloud</button>
-              </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <div style="min-width:0;"><div id="guideFeatureChapter" style="font-size:.68rem;color:var(--accent-green);font-weight:800;text-transform:uppercase;letter-spacing:.08em;">GETTING STARTED</div><h3 id="guideFeatureTitle" style="color:var(--accent-amber);font-size:1.08rem;margin:3px 0;">Welcome to MealFlow</h3></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span id="guideSlideCounter" style="font-size:.78rem;color:var(--text-muted);font-weight:bold;">Step 1 of 3</span><button class="btn btn-purple btn-sm" onclick="speakGuideSlide()">🔊 Read Aloud</button></div>
             </div>
-            <p id="guideSlideDesc" style="font-size:0.85rem; color:var(--text-muted); margin:8px 0; min-height:36px;"></p>
-            <div class="guide-mockup-screen" id="guideMockupScreen">
-              <div id="guideWireframeContent" style="padding:16px; flex:1; position:relative; overflow:hidden;"></div>
-              <div id="guideBubblesContainer"></div>
+            <p id="guideSlideDesc" style="font-size:.86rem;color:var(--text-muted);margin:7px 0 12px;min-height:42px;line-height:1.5;"></p>
+            <div class="guide-mockup-screen" id="guideMockupScreen" style="height:330px;min-height:270px;">
+              <div style="height:32px;flex:0 0 32px;background:#171717;border-bottom:1px solid #343434;display:flex;align-items:center;gap:6px;padding:0 12px;"><i style="width:9px;height:9px;border-radius:50%;background:#ff625a;"></i><i style="width:9px;height:9px;border-radius:50%;background:#ffbd2e;"></i><i style="width:9px;height:9px;border-radius:50%;background:#28c840;"></i><span style="margin:auto;font-size:.68rem;color:#aab0b9;letter-spacing:.04em;">MEALFLOW • FEATURE WALKTHROUGH</span></div>
+              <div id="guideWireframeContent" style="padding:16px;flex:1;position:relative;overflow:auto;"></div><div id="guideBubblesContainer"></div>
             </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;"><span id="guideLocationHint" style="font-size:.72rem;color:var(--text-muted);">Find it in: Home</span><span id="guideTopicCompletion" style="font-size:.72rem;color:var(--text-muted);">Topic not completed</span></div>
           </div>
         </div>
       </div>
-      <div class="modal-sticky-footer">
-        <button class="btn btn-sm" onclick="closeModal('guideModal')">✕ Close</button>
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-sm" onclick="changeGuideSlide(-1)">◀ Prev Step</button>
-          <button class="btn btn-green btn-sm" onclick="changeGuideSlide(1)">Next Step ▶</button>
-        </div>
+      <div class="modal-sticky-footer" style="gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="skipGuide()">Skip guide</button>
+        <div style="display:flex;gap:6px;align-items:center;"><button class="btn btn-sm" id="guidePrevBtn" onclick="changeGuideSlide(-1)">◀ Back</button><button class="btn btn-green btn-sm" id="guideNextBtn" onclick="changeGuideSlide(1)">Next →</button></div>
       </div>
     </div>
   </div>
@@ -1633,32 +1632,47 @@ body.light-mode input:not([type=checkbox]),body.light-mode select,body.light-mod
       { id: "d_7", name: "Spanish Paella Valenciana", cuisine: "SPANISH", time: "Dinner", timeEst: "40 mins", cal: "570 kcal", img: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&auto=format&fit=crop&q=80", ingredients: [{name:"Bomba Rice", reqQty:2, unit:"cups"}, {name:"Shrimp & Chicken", reqQty:1, unit:"lb"}, {name:"Saffron", reqQty:1, unit:"pinch"}], instructions: ["Cook sofrito.", "Add saffron stock and simmer rice without stirring until socarrat forms."] }
     ];
 
-    const masterGuideTitles = [
-      "1. Meal Recommendation Engine", "2. Meal Discovery Options", "3. Lucky Choice Surprise",
-      "4. Global Recipe Search", "5. Planner & Chef Scheduling", "6. Family Schedule & OCR Scan",
-      "7. Calendar Export & Push Alerts", "8. Hands-Free Audio Reading", "9. Live AI Cooking Help",
-      "10. Pantry Management & Reorder", "11. OCR Receipt & Batch Importer", "12. Deficit Shopping Calculations",
-      "13. Smart Shopping & Auto-Sync", "14. Quick Add Grocery Shortcut", "15. Clipboard Grocery Export",
-      "16. Starred Favorites & Cookbook", "17. Custom Family Recipes", "18. Family Profiles & Allergies",
-      "19. Household Chat & Ideas Board", "20. Interactive Analytics", "21. Backup, Restore & Sync",
-      "22. Meal History & Suggestions", "23. Nutrition & Dietary Preferences", "24. Household Invitations",
-      "25. Cloud Sync & Multi-Device Use", "26. Push & Email Notifications", "27. Theme & Display Settings",
-      "28. Shopping Checkout & Export", "29. Offline App & Recovery", "30. Account, Privacy & Security"
+    const masterGuideTopics = [
+      {chapter:'Getting Started',icon:'🏠',title:'Your MealFlow Home Screen',where:'Home',steps:[['Find your way around','Start on Home. The main navigation takes you to meal planning, your shopping list, pantry and settings. Use the header controls for your household and quick access.',['Home','Planner','Shopping List','Pantry','Settings']],['Choose what to do next','Use the meal cards and shortcuts to discover ideas, open a recipe or move into planning. On a phone, the layout stacks into a compact view.',['Meal ideas','Open recipe','Plan this meal']],['Make MealFlow yours','Open Settings to review your profile, preferences and household options. You can return to this guide whenever you need a refresher.',['Your profile','Preferences','Master User Guide']]]},
+      {chapter:'Meals & Recipes',icon:'✨',title:'Meal Recommendations',where:'Home / Meal ideas',steps:[['Explore suggested meals','Browse the meal suggestions on the home screen. Review the recipe name, meal type and available details before choosing.',['Breakfast','Lunch','Dinner','Snacks']],['Find a different idea','Use the recommendation controls to refresh suggestions or explore another direction when the first ideas do not fit.',['Refresh ideas','Cuisine','Meal type']],['Open and decide','Open a meal to review its ingredients and cooking instructions. Add it to your plan when it suits your household.',['Recipe details','Ingredients','Add to planner']]]},
+      {chapter:'Meals & Recipes',icon:'🎲',title:'Three Different Options & Lucky Choice',where:'Meal discovery',steps:[['Ask for alternatives','Use Show 3 Different Options to request a fresh set of ideas instead of settling for the first suggestion.',['Show 3 Different Options']],['Compare the choices','Review the three meal ideas and their details. Choose the one that best fits your time, ingredients and preferences.',['Option 1','Option 2','Option 3']],['Try a surprise pick','Use Lucky Choice when you want MealFlow to make the selection for you. Open the selected recipe to review it.',['Lucky Choice','Selected meal','View recipe']]]},
+      {chapter:'Meals & Recipes',icon:'🔎',title:'Recipe Search & Global Cuisines',where:'Recipe search',steps:[['Search for a recipe','Open recipe search and enter a dish, ingredient or type of meal. Keep the search focused for more useful results.',['Search recipes','Dish or ingredient','Find Recipe']],['Explore cuisines','Browse the cuisine picker to discover dishes from different regions. Choose a cuisine to narrow your inspiration.',['Canadian','Italian','Mexican','Explore cuisines']],['Review a result','Open a result and check its ingredients and instructions. Add suitable ingredients to your shopping list or plan the meal.',['Recipe result','Ingredients','Cooking steps']]]},
+      {chapter:'Planning & Calendar',icon:'📅',title:'Weekly Meal Planner',where:'Planner',steps:[['Open your planner','Go to Planner to see meals arranged by day and meal type. Use the date controls to move through your planning period.',['Monday','Tuesday','Wednesday','Dinner']],['Add or change a meal','Choose a meal slot and select a recipe or suggestion. Review the choice before saving the plan.',['Choose day','Choose meal','Save plan']],['Use the plan','Return to the planner to review the week. Planned meals can help guide shopping and household preparation.',['Weekly overview','Planned meals','Shopping needs']]]},
+      {chapter:'Planning & Calendar',icon:'👨‍👩‍👧‍👦',title:'Family Schedule & Attendance',where:'Planner / Household schedule',steps:[['Check household availability','Use the family schedule to see who is home or away and review household commitments alongside meal plans.',['Sean','Lorna','Mitchell','Lauren']],['Record a schedule detail','Add or update the relevant schedule information using the controls available in the planner. Check the date and person before saving.',['Select date','Person / event','Save schedule']],['Plan around the household','Use attendance and schedule information to choose meals that make sense for the people who will be home.',['Who is home?','Meal assignment','Weekly plan']]]},
+      {chapter:'Planning & Calendar',icon:'🗓️',title:'Calendar Export & Reminders',where:'Calendar / Settings',steps:[['Find calendar options','Open the calendar or settings area and review the available calendar connection and export controls.',['Calendar','Export','Connection settings']],['Choose what to share','Review the household calendar options and select the events or meal information you want to make available.',['Household calendar','Meal events','Export']],['Check reminders','Review notification preferences for upcoming meal reminders. Confirm the household and timing settings that are available.',['Day-before reminder','Morning-of reminder','Save preferences']]]},
+      {chapter:'Cooking & Recipes',icon:'🍳',title:'Recipe Details & Cooking Mode',where:'Recipe details',steps:[['Open the recipe','Select a meal to open its recipe details. Check the description, ingredients and preparation information.',['Recipe title','Time estimate','Servings']],['Follow the ingredients','Use the ingredient list to check what you have and what may need to be added to the shopping list.',['Ingredient list','Available items','Add missing items']],['Cook step by step','Work through the instructions in order. Use available audio reading controls when you want hands-free help.',['Step 1','Step 2','Next instruction']]]},
+      {chapter:'Cooking & Recipes',icon:'🔊',title:'Voice Input & Read Aloud',where:'Recipe / Add Item',steps:[['Read recipe instructions aloud','Where the read-aloud control is available, tap it to hear the current recipe or guide instructions. Browser voice support may vary.',['Read Aloud','Recipe instructions']],['Speak a shopping item','Open Add Item and use the voice control if your browser supports speech recognition. Say the item clearly.',['Add Item','🎙 Speak item']],['Review before adding','Check the recognized words and correct them before confirming. Voice recognition is not available in every browser or device.',['Recognized text','Edit item','Add to list']]]},
+      {chapter:'Cooking & Recipes',icon:'🧑‍🍳',title:'Cooking Help & Kitchen Resources',where:'Recipe / Resources',steps:[['Open available help','Use the cooking or resource links shown in the app for extra recipe and food information.',['Cooking resources','Recipe help']],['Use recipe information','Refer to the ingredient list and method in the selected recipe as your primary cooking instructions.',['Ingredients','Method','Timing']],['Check external resources','External links open their own websites. Review their content separately from your MealFlow household data.',['Food guide','Recipe resources','External site']]]},
+      {chapter:'Pantry & Inventory',icon:'🥫',title:'Pantry Management & Stock Levels',where:'Pantry',steps:[['Open your pantry','Go to Pantry to review stored items and their quantities. Use categories to find items more quickly.',['Pantry','Produce','Dairy','Household']],['Update stock','Add an item or adjust its quantity when you buy, use or run out of something. Check the unit and amount.',['Item name','Quantity','Unit']],['Use pantry information','Review pantry stock before shopping so you can avoid buying items you already have.',['In stock','Running low','Shopping list']]]},
+      {chapter:'Pantry & Inventory',icon:'📷',title:'Scan & Import Receipts or Items',where:'Pantry / Add Item',steps:[['Open Scan/Picture','Choose the scan or picture option and take a photo or select an image where your device allows it. Camera access depends on browser permissions.',['Scan/Picture','Take photo','Choose image']],['Review detected text','If text recognition is available, check the extracted words carefully. A receipt or label scan reads text; it does not reliably identify every unlabelled object.',['Detected text','Review results']],['Confirm your import','Edit the item names and quantities, then choose the destination and confirm. Do not import unclear entries without checking them.',['Edit items','Shopping List','Pantry','Confirm']]]},
+      {chapter:'Pantry & Inventory',icon:'📊',title:'Stock Shortages & Shopping Calculations',where:'Pantry / Shopping List',steps:[['Review what is missing','Compare planned ingredients with pantry stock. MealFlow may show items that need to be purchased.',['Recipe ingredients','Pantry stock','Missing items']],['Check quantities','Review the suggested amount and adjust it to match your household needs and package sizes.',['Needed quantity','Have on hand','To buy']],['Add to shopping','Confirm the missing items before moving them to your shopping list. Always check the final quantities.',['Add missing items','Shopping list']]]},
+      {chapter:'Shopping & Checkout',icon:'🛒',title:'Shopping List Basics',where:'Shopping List',steps:[['Open the list','Use the Shopping List link in the header or navigation. Review items grouped by category.',['Shopping List','Produce','Dairy','Pantry']],['Add and edit items','Type an item in Add Item, or use available scan and voice options. Adjust quantities and remove items you no longer need.',['Add Item','Quantity','Save item']],['Shop and check off','Mark items as you shop and review what remains. Keep the list current for everyone sharing the household.',['Item','Quantity','Done']]]},
+      {chapter:'Shopping & Checkout',icon:'➕',title:'Quick Add, Voice & Picture Entry',where:'Shopping List / Add Item',steps:[['Open Add Item','Use the Add Item control from the list. Enter the product name and quantity when known.',['Add Item','Item name','Quantity']],['Use a faster input method','On supported devices, use voice input or Scan/Picture to capture text from a label or receipt.',['🎙 Voice','📷 Scan/Picture']],['Confirm the entry','Review the item and quantity, then add it. Check that it appears in the correct list before closing.',['Review','Add to Shopping List']]]},
+      {chapter:'Shopping & Checkout',icon:'📤',title:'Copy, Share & Export Shopping',where:'Shopping List',steps:[['Open list actions','Look for the available copy, share or export controls in the shopping list. The exact options depend on the current app build.',['Copy','Share','Export']],['Review the exported list','Check item names and quantities before pasting or sharing with another service.',['Item','Quantity','Category']],['Use the destination app','When exporting to an external store or service, complete the order in that service and verify its cart independently.',['Store website','Review cart','Checkout']]]},
+      {chapter:'Shopping & Checkout',icon:'🏬',title:'Store Selection & Checkout Workflow',where:'Shopping List / Checkout',steps:[['Prepare your list','Review quantities and remove items you do not need before starting a store workflow.',['Shopping list','Quantities','Ready to shop']],['Choose an available destination','Select from the store or export options actually shown in your app. Store integrations and availability can vary.',['Choose store','Export / continue']],['Verify the cart externally','Check substitutions, prices, delivery details and the final cart on the retailer website before placing an order.',['Retailer cart','Substitutions','Final total']]]},
+      {chapter:'Favourites & Household',icon:'⭐',title:'Starred Meals & Favourites',where:'Recipes / Favourites',steps:[['Star a meal','Use the star control on a meal or recipe to save it as a favourite.',['☆ Star meal','Recipe card']],['Find saved meals','Open the favourites or cookbook area to revisit saved recipes.',['Starred meals','Saved recipes']],['Keep devices aligned','When signed in and online, cloud sync can share supported favourites across your household devices. Check sync status if a change is missing.',['Saved locally','Cloud sync','Other device']]]},
+      {chapter:'Favourites & Household',icon:'📖',title:'Custom Family Recipes',where:'Recipes / Cookbook',steps:[['Open custom recipes','Go to the custom recipe area and choose the add or create option when available.',['Custom recipes','Add recipe']],['Enter your family recipe','Add the recipe name, ingredients and cooking instructions. Include useful quantities and steps.',['Recipe name','Ingredients','Instructions']],['Save and revisit','Save the recipe and check that it appears in your recipe collection. Use it when planning future meals.',['Save recipe','My recipes','Add to planner']]]},
+      {chapter:'Favourites & Household',icon:'👤',title:'Profiles, Allergies & Dietary Preferences',where:'Profile / Settings',steps:[['Open your profile settings','Use the user/profile menu or Settings to find personal and household preferences.',['Profile','Settings']],['Set preferences carefully','Review dietary preferences and allergy information. Enter accurate details and check them before saving.',['Diet preferences','Allergies','Save']],['Review meal choices','Use saved preferences when considering meal suggestions, but always inspect ingredients and labels for allergy safety.',['Meal suggestion','Ingredient check','Confirm suitability']]]},
+      {chapter:'Favourites & Household',icon:'💬',title:'Household Chat & Shared Ideas',where:'Household / Chat',steps:[['Open household chat','Use the household chat or ideas area when available to share meal thoughts with other members.',['Household chat','Ideas board']],['Add a useful note','Write a clear suggestion or comment and submit it using the on-screen control.',['Write a message','Post']],['Keep plans coordinated','Use shared comments to coordinate meal ideas, then update the planner or shopping list separately as needed.',['Discuss idea','Update planner','Update list']]]},
+      {chapter:'Insights & History',icon:'📈',title:'Analytics & Household Insights',where:'Analytics',steps:[['Open Analytics','Go to the analytics area to view the summaries available in your current app version.',['Analytics','Overview']],['Choose a household member','Where a person selector is available, choose a profile to view the corresponding information.',['Household member','Select profile']],['Interpret the results','Use charts and totals as a planning aid. They reflect the data available to the app and may change as records are updated.',['Meal activity','Trends','Summary']]]},
+      {chapter:'Insights & History',icon:'🕘',title:'Meal History & Suggestions',where:'Planner / History',steps:[['Review past meals','Use the available planner or history views to revisit previously planned meals.',['Meal history','Past week']],['Use past choices for ideas','Look back at meals your household enjoyed when choosing what to cook again.',['Previous meals','Favourite ideas']],['Update the next plan','Add a suitable meal to a future date and check the weekly plan.',['Choose meal','Select date','Save']]]},
+      {chapter:'Insights & History',icon:'🥗',title:'Nutrition & Dietary Planning',where:'Recipes / Profile settings',steps:[['Review recipe nutrition','Where recipe nutrition details are shown, review the estimates alongside the ingredients and serving size.',['Calories','Serving size','Ingredients']],['Set dietary preferences','Open profile settings to manage supported dietary preferences such as the options offered in your build.',['Diet preferences','Save settings']],['Check ingredients yourself','Nutrition and preference filters are aids, not medical advice. Read packaging and verify ingredients, especially for allergies.',['Read label','Check allergens','Confirm']]]},
+      {chapter:'Household & Accounts',icon:'✉️',title:'Household Members & Invitations',where:'Settings / Household',steps:[['Open household settings','Find the household or member management area in Settings.',['Household','Members']],['Review member access','Check the profile or invitation details before sharing access. Only invite people who should see the household information.',['Member profile','Invite','Access']],['Confirm setup','Ask the invited member to complete the sign-in process and verify they can see the intended shared information.',['Accept invitation','Sign in','Shared view']]]},
+      {chapter:'Household & Accounts',icon:'☁️',title:'Cloud Sync & Multi-Device Use',where:'Account / Sync status',steps:[['Sign in while online','Cloud sync requires an account session and an internet connection. Offline access does not mean offline sign-in.',['Account','Signed in','Online']],['Allow changes to sync','After editing shared data, allow the app to finish saving. Check the sync status if another device does not show the latest change.',['Saving','Synced','Retry if needed']],['Check another device','Open MealFlow on another signed-in device and verify the relevant household data appears. Avoid editing the same record simultaneously if possible.',['Device 1','Cloud','Device 2']]]},
+      {chapter:'Household & Accounts',icon:'🔔',title:'Push & Email Notifications',where:'Settings / Notifications',steps:[['Open notification settings','Review the notification controls available to your account and device.',['Notifications','Push','Email']],['Choose what to receive','Enable only the reminders you want and review their timing. Browser permission may also be required for push notifications.',['Meal reminder','Day before','Morning of']],['Test your setup','Check device and browser notification permissions, then use any available test option. Email and push delivery can behave differently.',['Browser permission','Email address','Test / status']]]},
+      {chapter:'Household & Accounts',icon:'🎨',title:'Theme, Display & Mobile Layout',where:'Settings / Display',steps:[['Choose your display','Open Settings and review the theme or display options available in your build.',['Display settings','Dark mode','Light mode']],['Use the mobile layout','On a phone, use the compact header and navigation controls. Scroll within panels when content extends beyond the screen.',['Mobile header','Shopping List','Settings']],['Adjust for comfort','Choose the display that is easiest to read on your device. Reopen this guide from Settings when needed.',['Readable layout','Save preference']]]},
+      {chapter:'Household & Accounts',icon:'💾',title:'Backup, Restore & Data Recovery',where:'Settings / Account',steps:[['Find data tools','Review the backup, restore or recovery controls that are available in your current version.',['Settings','Backup / restore']],['Protect your information','Before restoring or replacing data, read the confirmation carefully and make sure you have selected the intended household and backup.',['Backup date','Household','Confirm']],['Verify after recovery','Return to the planner, shopping list and pantry to check that expected information is present. Contact support before repeating a failed restore.',['Planner','Shopping list','Pantry']]]},
+      {chapter:'Household & Accounts',icon:'🔐',title:'Account, Password & Privacy',where:'Account / Settings',steps:[['Open account settings','Use the profile menu or Settings to find account and security options.',['Account','Settings']],['Manage sign-in details','Use the available password or recovery controls. Follow the email instructions when a reset is requested.',['Change password','Forgot password','Email link']],['Protect your account','Use a unique password, sign out on shared devices and avoid sharing account credentials. Review privacy settings periodically.',['Unique password','Sign out','Privacy']]]},
+      {chapter:'Household & Accounts',icon:'📴',title:'Offline Use, PWA & Troubleshooting',where:'App / Browser',steps:[['Understand offline use','MealFlow may keep parts of the app available after they have loaded, but cloud features need a connection. Offline login is not supported.',['App shell','Offline mode','Cloud needs internet']],['Install or reopen the app','Use your browser’s install option when available. Keep the app updated by reconnecting periodically.',['Install app','Home screen','Update']],['Recover from a problem','Refresh the page, check your connection and sign-in status, then reopen the affected section. Avoid clearing site data unless you understand the consequences.',['Refresh','Check connection','Reopen section']]]}
     ];
-
-    const guideVisuals = [
-      {icon:"1️⃣",title:"Find it",text:"Open the feature from the main navigation or the relevant card."},
-      {icon:"2️⃣",title:"Use it",text:"Follow the controls shown in the walkthrough and make your selection."},
-      {icon:"3️⃣",title:"Confirm it",text:"Check the result, then continue or return to the planner."}
-    ];
-    const fullMasterGuide = masterGuideTitles.map((title, i) => ({
-      id:`feat_${i+1}`, title, slides:[
-        {desc:`Start here: ${title.replace(/^\d+\. /,"")}. This screen shows where to find the feature and what it is designed to do.`,bubbles:[{top:"20%",left:"8%",text:"👉 1. Locate the feature"}],visual:guideVisuals[0]},
-        {desc:`Use the feature step-by-step. Make your choice, review the information on screen, and use the main action button when ready.`,bubbles:[{top:"48%",left:"52%",text:"🎯 2. Make your selection"}],visual:guideVisuals[1]},
-        {desc:`Finish by checking the result. Where applicable, MealFlow keeps the household planner, pantry, shopping list and cloud data aligned.`,bubbles:[{top:"72%",left:"58%",text:"✨ 3. Review the result"}],visual:guideVisuals[2]}
-      ]
+    const masterGuideTitles = masterGuideTopics.map((t,i)=>`${i+1}. ${t.title}`);
+    const fullMasterGuide = masterGuideTopics.map((topic,i)=>({
+      id:`feat_${i+1}`, title:`${i+1}. ${topic.title}`, chapter:topic.chapter, icon:topic.icon, where:topic.where,
+      slides:topic.steps.map((step,n)=>({
+        desc:step[1], action:step[0], labels:step[2],
+        bubbles:[{top:n===0?'20%':n===1?'48%':'72%',left:n===0?'25%':n===1?'65%':'55%',text:`${topic.icon} ${step[0]}`}]
+      }))
     }));
-
     const initialRobustPantryData = [
       { name: "Extra Virgin Olive Oil", qty: 2, unitWeight: "1 bottle (750 ml)", cal: "120 kcal/tbsp", fat: "14g", sugar: "0g", isFrequent: true, autoReorderDays: 14, category: "Pantry: Oils, Sauces & Spices", addedBy: "Sean" },
       { name: "Yellow Cooking Onions", qty: 8, unitWeight: "1 bag (3 lbs)", cal: "45 kcal/onion", fat: "0.1g", sugar: "5g", isFrequent: true, autoReorderDays: 7, category: "Produce: Fresh Vegetables", addedBy: "Sean" },
@@ -2167,46 +2181,49 @@ function showMealFlowPasswordRecovery(){
     window.setAnalyticsPerson=setAnalyticsPerson;
 
     // ==========================================
-    // MASTER USER GUIDE
+    // MASTER USER GUIDE / FIRST-RUN ONBOARDING
     // ==========================================
     let activeGuideFeatureIndex = 0;
     let activeGuideSlideIndex = 0;
+    let guideCompletedTopics = new Set();
+    try { guideCompletedTopics = new Set(JSON.parse(localStorage.getItem('mealflow_guide_completed') || '[]')); } catch(e) { guideCompletedTopics = new Set(); }
 
     function renderGuideFeatureList(filter = '') {
-      const list = document.getElementById('guideSidebarList');
-      if (!list) return;
-      const q = String(filter || '').toLowerCase().trim();
-      const matches = fullMasterGuide.map((f, i) => ({f, i})).filter(x => !q || x.f.title.toLowerCase().includes(q));
-      list.innerHTML = matches.map(x => `<button type="button" onclick="selectGuideFeature(${x.i})" style="text-align:left;padding:8px 9px;border-radius:6px;border:1px solid ${x.i===activeGuideFeatureIndex?'var(--accent-amber)':'var(--border-color)'};background:${x.i===activeGuideFeatureIndex?'#3b2f08':'#0f172a'};color:${x.i===activeGuideFeatureIndex?'var(--accent-amber)':'#fff'};font-size:.72rem;font-weight:700;cursor:pointer;">${x.f.title}</button>`).join('');
+      const list = document.getElementById('guideSidebarList'); if (!list) return;
+      const q=String(filter||'').toLowerCase().trim(); let html=''; let lastChapter='';
+      fullMasterGuide.forEach((f,i)=>{
+        if(q && !(f.title+' '+f.chapter+' '+f.where+' '+f.slides.map(x=>x.desc).join(' ')).toLowerCase().includes(q)) return;
+        if(f.chapter!==lastChapter){html+=`<div style="padding:10px 7px 4px;color:var(--accent-green);font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.09em;">${f.chapter}</div>`;lastChapter=f.chapter;}
+        const active=i===activeGuideFeatureIndex,done=guideCompletedTopics.has(f.id);
+        html+=`<button type="button" onclick="selectGuideFeature(${i})" style="display:flex;align-items:center;gap:7px;text-align:left;padding:8px 9px;border-radius:7px;border:1px solid ${active?'var(--accent-green)':'var(--border-color)'};background:${active?'rgba(91,155,84,.18)':'#0f172a'};color:${active?'#a7df91':'#fff'};font-size:.72rem;font-weight:700;cursor:pointer;"><span>${f.icon}</span><span style="flex:1;line-height:1.3;">${f.title.replace(/^\d+\. /,'')}</span><span style="color:${done?'#7bc66b':'#77808e'};">${done?'✓':'○'}</span></button>`;
+      });
+      list.innerHTML=html||'<div style="padding:12px;color:var(--text-muted);font-size:.75rem;">No matching topics. Try another search.</div>';
     }
-
-    function renderGuideSlide() {
-      const feature = fullMasterGuide[activeGuideFeatureIndex] || fullMasterGuide[0];
-      const slide = feature.slides[activeGuideSlideIndex] || feature.slides[0];
-      const title = document.getElementById('guideFeatureTitle');
-      const desc = document.getElementById('guideSlideDesc');
-      const counter = document.getElementById('guideSlideCounter');
-      const wire = document.getElementById('guideWireframeContent');
-      const bubbles = document.getElementById('guideBubblesContainer');
-      if (title) title.textContent = feature.title;
-      if (desc) desc.textContent = slide.desc;
-      if (counter) counter.textContent = `Step ${activeGuideSlideIndex + 1} of ${feature.slides.length}`;
-      if (wire) { const v=slide.visual||guideVisuals[0]; wire.innerHTML=`<div style="height:100%;display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;color:var(--text-main);padding:20px;box-sizing:border-box;"><div style="font-size:3rem;">${v.icon}</div><b style="font-size:1.2rem;color:var(--accent-amber);">${feature.title}</b><div style="width:min(760px,90%);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">${guideVisuals.map((x,n)=>`<div style="padding:14px;border:1px solid ${n===activeGuideSlideIndex?'var(--accent-amber)':'var(--border-color)'};border-radius:10px;background:var(--card-bg);text-align:left;"><div style="font-size:1.2rem;">${x.icon}</div><b style="display:block;margin:5px 0;font-size:.82rem;">${x.title}</b><span style="font-size:.68rem;color:var(--text-muted);line-height:1.4;">${x.text}</span></div>`).join('')}</div><div style="width:min(760px,90%);height:8px;border-radius:5px;background:var(--border-color);overflow:hidden;"><span style="display:block;width:${(activeGuideSlideIndex+1)*33.33}%;height:100%;background:var(--accent-amber);border-radius:5px;"></span></div><span style="font-size:.76rem;color:var(--text-muted);">Interactive visual guide • Step ${activeGuideSlideIndex+1} of 3</span></div>`; }
-      if (bubbles) bubbles.innerHTML = (slide.bubbles || []).map(b => `<div class="guide-highlight-bubble" style="top:${b.top};left:${b.left};">${b.text}</div>`).join('');
-      renderGuideFeatureList(document.getElementById('guideSearchInput')?.value || '');
+    function updateGuideProgress(){
+      const total=fullMasterGuide.length,done=guideCompletedTopics.size,pct=Math.round(done/total*100);
+      const t=document.getElementById('guideOverallProgressText'),p=document.getElementById('guideOverallPercent'),b=document.getElementById('guideOverallProgress');
+      if(t)t.textContent=`${done} of ${total} topics completed`;if(p)p.textContent=`${pct}%`;if(b)b.style.width=pct+'%';
     }
-
-    window.selectGuideFeature = function(index) { activeGuideFeatureIndex = Math.max(0, Math.min(index, fullMasterGuide.length - 1)); activeGuideSlideIndex = 0; renderGuideSlide(); };
-    window.changeGuideSlide = function(delta) { activeGuideSlideIndex = Math.max(0, Math.min(activeGuideSlideIndex + Number(delta || 0), (fullMasterGuide[activeGuideFeatureIndex]?.slides.length || 1) - 1)); renderGuideSlide(); };
-    window.filterGuideFeatures = function(value) { renderGuideFeatureList(value); };
-    window.openGuideModal = function() { activeGuideFeatureIndex = 0; activeGuideSlideIndex = 0; const search=document.getElementById('guideSearchInput'); if(search) search.value=''; renderGuideSlide(); openModal('guideModal'); };
-    window.speakGuideSlide = function() {
-      const feature = fullMasterGuide[activeGuideFeatureIndex]; const slide = feature?.slides?.[activeGuideSlideIndex];
-      if (!('speechSynthesis' in window) || !slide) return showToast('Audio reading is not supported by this browser.');
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(`${feature.title}. ${slide.desc}`);
-      window.speechSynthesis.speak(utter);
-    };
+    function renderGuideSlide(){
+      const feature=fullMasterGuide[activeGuideFeatureIndex]||fullMasterGuide[0],slide=feature.slides[activeGuideSlideIndex]||feature.slides[0];
+      const put=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+      put('guideFeatureTitle',feature.title.replace(/^\d+\. /,''));put('guideFeatureChapter',feature.chapter.toUpperCase());put('guideChapterLabel',`${feature.chapter} • ${activeGuideFeatureIndex+1} of ${fullMasterGuide.length} topics`);put('guideSlideDesc',slide.desc);put('guideSlideCounter',`Step ${activeGuideSlideIndex+1} of ${feature.slides.length}`);put('guideLocationHint',`Find it in: ${feature.where}`);put('guideTopicCompletion',guideCompletedTopics.has(feature.id)?'✓ Topic completed':'Topic not completed');
+      const wire=document.getElementById('guideWireframeContent');
+      if(wire){const rows=slide.labels.map((label,n)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${n===activeGuideSlideIndex?'#79b65f':'#344052'};border-radius:9px;background:${n===activeGuideSlideIndex?'rgba(105,165,82,.18)':'#151d29'};margin:7px 0;"><span style="width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:${n===activeGuideSlideIndex?'#6da957':'#263449'};color:white;font-weight:800;font-size:.72rem;">${n+1}</span><span style="font-size:.82rem;color:#edf2f7;font-weight:650;flex:1;">${label}</span>${n===activeGuideSlideIndex?'<span style="color:#91c978;font-size:.7rem;font-weight:800;">FOCUS</span>':''}</div>`).join('');
+        wire.innerHTML=`<div style="max-width:780px;margin:0 auto;color:#eef2f7;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;"><div style="font-size:2rem;">${feature.icon}</div><div><div style="font-size:.62rem;color:#91c978;font-weight:900;letter-spacing:.1em;text-transform:uppercase;">${feature.chapter}</div><div style="font-size:1.05rem;font-weight:850;">${slide.action}</div><div style="font-size:.68rem;color:#9ca8b8;margin-top:2px;">A visual example of the steps and controls</div></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:12px;"><div style="border:1px solid #334155;background:#111827;border-radius:8px;padding:8px;"><div style="font-size:.62rem;color:#94a3b8;">CHAPTER</div><b style="font-size:.7rem;">${feature.chapter}</b></div><div style="border:1px solid #334155;background:#111827;border-radius:8px;padding:8px;"><div style="font-size:.62rem;color:#94a3b8;">STEP</div><b style="font-size:.7rem;">${activeGuideSlideIndex+1} / ${feature.slides.length}</b></div><div style="border:1px solid #334155;background:#111827;border-radius:8px;padding:8px;"><div style="font-size:.62rem;color:#94a3b8;">LOCATION</div><b style="font-size:.7rem;">${feature.where}</b></div></div><div style="font-size:.63rem;color:#91c978;font-weight:900;letter-spacing:.1em;margin:8px 0;">WHAT YOU'LL SEE</div>${rows}<div style="margin-top:12px;height:5px;border-radius:9px;background:#263244;overflow:hidden;"><div style="height:100%;width:${(activeGuideSlideIndex+1)/feature.slides.length*100}%;background:#79b65f;"></div></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.65rem;color:#9ca8b8;"><span>${feature.title}</span><span>${Math.round((activeGuideSlideIndex+1)/feature.slides.length*100)}% through topic</span></div></div>`;
+      }
+      const bubbles=document.getElementById('guideBubblesContainer');if(bubbles)bubbles.innerHTML='';
+      const prev=document.getElementById('guidePrevBtn'),next=document.getElementById('guideNextBtn');if(prev)prev.disabled=activeGuideFeatureIndex===0&&activeGuideSlideIndex===0;if(next)next.textContent=activeGuideSlideIndex===feature.slides.length-1?(activeGuideFeatureIndex===fullMasterGuide.length-1?'Finish ✓':'Next topic →'):'Next →';
+      renderGuideFeatureList(document.getElementById('guideSearchInput')?.value||'');updateGuideProgress();
+    }
+    function saveGuideCompletion(){try{localStorage.setItem('mealflow_guide_completed',JSON.stringify([...guideCompletedTopics]));}catch(e){} }
+    window.selectGuideFeature=function(index){activeGuideFeatureIndex=Math.max(0,Math.min(Number(index)||0,fullMasterGuide.length-1));activeGuideSlideIndex=0;renderGuideSlide();};
+    window.changeGuideSlide=function(delta){const f=fullMasterGuide[activeGuideFeatureIndex];if(delta>0&&activeGuideSlideIndex>=f.slides.length-1){guideCompletedTopics.add(f.id);saveGuideCompletion();if(activeGuideFeatureIndex<fullMasterGuide.length-1){activeGuideFeatureIndex++;activeGuideSlideIndex=0;}else{renderGuideSlide();showToast('You have reached the end of the MealFlow guide.');return;}}else if(delta<0&&activeGuideSlideIndex===0){if(activeGuideFeatureIndex>0){activeGuideFeatureIndex--;activeGuideSlideIndex=fullMasterGuide[activeGuideFeatureIndex].slides.length-1;}}else{activeGuideSlideIndex=Math.max(0,Math.min(activeGuideSlideIndex+Number(delta||0),f.slides.length-1));}renderGuideSlide();};
+    window.filterGuideFeatures=function(value){renderGuideFeatureList(value);};
+    window.closeGuideModal=function(){try{localStorage.setItem('mealflow_guide_seen','1');}catch(e){}closeModal('guideModal');};
+    window.skipGuide=function(){try{localStorage.setItem('mealflow_guide_seen','1');}catch(e){}closeModal('guideModal');};
+    window.openGuideModal=function(){activeGuideFeatureIndex=0;activeGuideSlideIndex=0;const search=document.getElementById('guideSearchInput');if(search)search.value='';renderGuideSlide();openModal('guideModal');};
+    window.speakGuideSlide=function(){const feature=fullMasterGuide[activeGuideFeatureIndex],slide=feature?.slides?.[activeGuideSlideIndex];if(!('speechSynthesis'in window)||!slide)return showToast('Audio reading is not supported by this browser.');window.speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(`${feature.title}. ${slide.action}. ${slide.desc}`);window.speechSynthesis.speak(utter);};
 
     function loadState() {
       try {
@@ -3710,6 +3727,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Supabase Realtime now handles cross-device updates; no 5-second polling needed.
   initSupabaseCloudSync();
+
+  // First-visit welcome: only open when no other modal (for example, sign-in) is already active.
+  setTimeout(() => {
+    try {
+      if (localStorage.getItem('mealflow_guide_seen') === '1') return;
+      const anotherModalOpen = [...document.querySelectorAll('.modal-overlay')].some(el => el.id !== 'guideModal' && getComputedStyle(el).display !== 'none');
+      if (!anotherModalOpen && typeof window.openGuideModal === 'function') window.openGuideModal();
+    } catch(e) { console.warn('MealFlow welcome guide could not auto-open:', e); }
+  }, 1800);
 });
 </script>
 
@@ -3745,7 +3771,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Recipe photos must never fall back to an unrelated food image.
   window.handleMealImgError=function(img){if(!img||img.dataset.fallbackApplied==='1')return true;img.dataset.fallbackApplied='1';img.removeAttribute('onerror');img.src=window.FALLBACK_FOOD_IMG;img.classList.add('meal-img-fallback');return true;};
   if(window.Api&&typeof Api.imgHtml==='function'){Api.imgHtml=function(mealObj,alt,extraClass){const safeAlt=String(alt||mealObj.name||'Meal').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cls=extraClass?`meal-card-img ${extraClass}`:'meal-card-img';const src=mealObj.img||window.FALLBACK_FOOD_IMG;return `<img src="${src}" alt="${safeAlt}" class="${cls}" loading="eager" referrerpolicy="no-referrer" onerror="window.handleMealImgError(this)">`;};}
-  const version='v0.9.21-meal-options-scan-voice';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
+  const version='v0.9.22-meal-options-scan-voice';window.APP_VERSION=version;try{localStorage.setItem('stus_app_version',version);}catch(e){}
   document.addEventListener('DOMContentLoaded',()=>{const h=document.getElementById('headerVersionTag'),v=document.getElementById('settingsVersionTag');if(h)h.textContent=version;if(v)v.textContent=version;});
 })();
 
